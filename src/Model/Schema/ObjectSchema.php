@@ -7,8 +7,8 @@ namespace Utopia\OpenAPI\Model\Schema;
 final readonly class ObjectSchema extends Schema
 {
     /**
-     * @param array<string, Schema> $properties
-     * @param list<string> $required
+     * @param  array<string, Schema>  $properties
+     * @param  list<string>  $required
      */
     public function __construct(
         public array $properties = [],

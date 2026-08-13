@@ -4,6 +4,4 @@ declare(strict_types=1);
 
 namespace Utopia\OpenAPI\Exception;
 
-class ReferenceNotFound extends ParseException
-{
-}
+class ReferenceNotFound extends ParseException {}

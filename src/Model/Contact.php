@@ -12,6 +12,5 @@ final readonly class Contact
         public ?string $url = null,
         public ?string $email = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

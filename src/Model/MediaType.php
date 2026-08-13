@@ -9,9 +9,9 @@ use Utopia\OpenAPI\Model\Schema\Schema;
 final readonly class MediaType
 {
     /**
-     * @param array<string, Example> $examples
-     * @param array<string, Encoding> $encoding
-     * @param array<string, mixed> $extensions
+     * @param  array<string, Example>  $examples
+     * @param  array<string, Encoding>  $encoding
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public ?Schema $schema = null,
@@ -19,6 +19,5 @@ final readonly class MediaType
         public array $examples = [],
         public array $encoding = [],
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

@@ -7,12 +7,16 @@ namespace Utopia\OpenAPI\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Utopia\OpenAPI\Model\HttpMethod;
+use Utopia\OpenAPI\Model\Operation;
 use Utopia\OpenAPI\Model\ParameterLocation;
 use Utopia\OpenAPI\Model\Schema\IntegerSchema;
 use Utopia\OpenAPI\Model\Schema\ObjectSchema;
 use Utopia\OpenAPI\Model\Schema\ReferenceSchema;
 use Utopia\OpenAPI\Model\Schema\StringSchema;
+use Utopia\OpenAPI\Model\SecurityRequirement;
+use Utopia\OpenAPI\Model\SecurityScheme;
 use Utopia\OpenAPI\Model\SecuritySchemeType;
+use Utopia\OpenAPI\Model\Server;
 use Utopia\OpenAPI\Parser;
 use Utopia\OpenAPI\Specification;
 use Utopia\OpenAPI\Version;
@@ -28,7 +32,7 @@ final class CrossVersionFixtureTest extends TestCase
     }
 
     #[DataProvider('specificationProvider')]
-    public function testEquivalentDocumentsProduceEquivalentCanonicalBehavior(
+    public function test_equivalent_documents_produce_equivalent_canonical_behavior(
         string $fixture,
         Version $version,
         string $sourceVersion,
@@ -108,7 +112,7 @@ final class CrossVersionFixtureTest extends TestCase
     }
 
     #[DataProvider('specificationProvider')]
-    public function testFixtureCanBeParsedFromJsonAndDecodedArray(
+    public function test_fixture_can_be_parsed_from_json_and_decoded_array(
         string $fixture,
         Version $version,
         string $sourceVersion,
@@ -123,7 +127,7 @@ final class CrossVersionFixtureTest extends TestCase
         self::assertSame($sourceVersion, $fromArray->sourceVersion);
     }
 
-    public function testFixturesHaveEquivalentSemanticSnapshots(): void
+    public function test_fixtures_have_equivalent_semantic_snapshots(): void
     {
         $snapshots = [];
         foreach (self::specificationProvider() as [$fixture]) {
@@ -141,8 +145,9 @@ final class CrossVersionFixtureTest extends TestCase
 
     private function fixtureContents(string $fixture): string
     {
-        $contents = file_get_contents(__DIR__ . '/Fixtures/' . $fixture);
+        $contents = file_get_contents(__DIR__.'/Fixtures/'.$fixture);
         self::assertNotFalse($contents, "Unable to read fixture {$fixture}");
+
         return $contents;
     }
 
@@ -168,10 +173,10 @@ final class CrossVersionFixtureTest extends TestCase
 
         return [
             'info' => [$specification->info->title, $specification->info->description, $specification->info->version],
-            'servers' => array_map(static fn (\Utopia\OpenAPI\Model\Server $server): string => $server->url, $specification->servers),
+            'servers' => array_map(static fn (Server $server): string => $server->url, $specification->servers),
             'tags' => array_keys($specification->tags),
             'operations' => array_map(
-                static fn (\Utopia\OpenAPI\Model\Operation $operation): array => [$operation->id, $operation->method->value, $operation->path, $operation->tags],
+                static fn (Operation $operation): array => [$operation->id, $operation->method->value, $operation->path, $operation->tags],
                 $specification->operations(),
             ),
             'create' => [
@@ -184,11 +189,11 @@ final class CrossVersionFixtureTest extends TestCase
             'get' => [
                 'parameter' => [$get->parameters[0]->name, $get->parameters[0]->location->value, $get->parameters[0]->description],
                 'responses' => array_keys($get->responses),
-                'security' => array_map(static fn (\Utopia\OpenAPI\Model\SecurityRequirement $requirement): array => $requirement->schemes, $get->security),
+                'security' => array_map(static fn (SecurityRequirement $requirement): array => $requirement->schemes, $get->security),
             ],
             'deleteSecurity' => $delete->security,
             'securitySchemes' => array_map(
-                static fn (\Utopia\OpenAPI\Model\SecurityScheme $scheme): array => [$scheme->type->value, $scheme->name, $scheme->location?->value, $scheme->scheme],
+                static fn (SecurityScheme $scheme): array => [$scheme->type->value, $scheme->name, $scheme->location?->value, $scheme->scheme],
                 $specification->securitySchemes,
             ),
             'pet' => [

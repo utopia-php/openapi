@@ -8,8 +8,8 @@ use Utopia\OpenAPI\Exception\InvalidSpecification;
 use Utopia\OpenAPI\Model\Schema\AnySchema;
 use Utopia\OpenAPI\Model\Schema\ArraySchema;
 use Utopia\OpenAPI\Model\Schema\BooleanSchema;
-use Utopia\OpenAPI\Model\Schema\Composition;
 use Utopia\OpenAPI\Model\Schema\CompositeSchema;
+use Utopia\OpenAPI\Model\Schema\Composition;
 use Utopia\OpenAPI\Model\Schema\Discriminator;
 use Utopia\OpenAPI\Model\Schema\IntegerSchema;
 use Utopia\OpenAPI\Model\Schema\NeverSchema;
@@ -35,18 +35,16 @@ final readonly class Reader
         'maxItems', 'minItems', 'uniqueItems', 'multipleOf', 'description', 'x-nullable',
     ];
 
-    public function __construct(private Dialect $dialect)
-    {
-    }
+    public function __construct(private Dialect $dialect) {}
 
     public function read(mixed $raw, string $location): Schema
     {
         if (is_bool($raw)) {
-            if (!$this->dialect->booleanSchemas) {
+            if (! $this->dialect->booleanSchemas) {
                 throw new InvalidSpecification("Boolean schemas are only supported by OpenAPI 3.1 at {$location}");
             }
 
-            return $raw ? new AnySchema() : new NeverSchema();
+            return $raw ? new AnySchema : new NeverSchema;
         }
 
         $data = Value::object($raw, $location);
@@ -62,7 +60,7 @@ final readonly class Reader
         $nullable = $common['nullable'];
         $type = $data['type'] ?? null;
         if (is_array($type)) {
-            if (!$this->dialect->typeArrays || !array_is_list($type)) {
+            if (! $this->dialect->typeArrays || ! array_is_list($type)) {
                 throw new InvalidSpecification("Invalid schema type at {$location}/type");
             }
             $types = array_values(array_filter($type, static fn (mixed $item): bool => $item !== 'null'));
@@ -71,7 +69,7 @@ final readonly class Reader
             if (count($types) > 1) {
                 $schemas = [];
                 foreach ($types as $index => $memberType) {
-                    if (!is_string($memberType)) {
+                    if (! is_string($memberType)) {
                         throw new InvalidSpecification("Invalid schema type at {$location}/type/{$index}");
                     }
                     $schemas[] = $this->read(['type' => $memberType], "{$location}/type/{$index}");
@@ -81,7 +79,7 @@ final readonly class Reader
             }
             $type = $types[0] ?? null;
         }
-        if ($type !== null && !is_string($type)) {
+        if ($type !== null && ! is_string($type)) {
             throw new InvalidSpecification("Invalid schema type at {$location}/type");
         }
 
@@ -124,7 +122,7 @@ final readonly class Reader
             'boolean' => new BooleanSchema(...$common),
             'array' => new ArraySchema(
                 ...[
-                    'items' => array_key_exists('items', $data) ? $this->read($data['items'], "{$location}/items") : new AnySchema(),
+                    'items' => array_key_exists('items', $data) ? $this->read($data['items'], "{$location}/items") : new AnySchema,
                     'minItems' => Value::nullableInt($data['minItems'] ?? null, "{$location}/minItems"),
                     'maxItems' => Value::nullableInt($data['maxItems'] ?? null, "{$location}/maxItems"),
                     'uniqueItems' => (bool) ($data['uniqueItems'] ?? false),
@@ -142,7 +140,7 @@ final readonly class Reader
      * Read a schema from the keywords a 2.0 parameter or header carries inline,
      * where there is no nested 'schema' object to read from.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function readParameterFields(array $data, string $location): Schema
     {
@@ -150,13 +148,13 @@ final readonly class Reader
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function common(array $data): array
     {
         $enum = isset($data['enum']) ? Value::list($data['enum'], 'schema/enum') : [];
-        if ($this->dialect->constKeyword && array_key_exists('const', $data) && !isset($data['enum'])) {
+        if ($this->dialect->constKeyword && array_key_exists('const', $data) && ! isset($data['enum'])) {
             $enum = [$data['const']];
         }
 
@@ -176,8 +174,8 @@ final readonly class Reader
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @param array<string, mixed> $common
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $common
      */
     private function integer(array $data, string $location, array $common): IntegerSchema
     {
@@ -187,8 +185,8 @@ final readonly class Reader
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @param array<string, mixed> $common
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $common
      */
     private function number(array $data, string $location, array $common): NumberSchema
     {
@@ -198,7 +196,7 @@ final readonly class Reader
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array{int|float|null, int|float|null, bool, bool}
      */
     private function bounds(array $data, string $location): array
@@ -220,8 +218,8 @@ final readonly class Reader
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @param array<string, mixed> $common
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $common
      */
     private function object(array $data, string $location, array $common): ObjectSchema
     {
@@ -233,7 +231,7 @@ final readonly class Reader
             ? array_map(strval(...), Value::list($data['required'], "{$location}/required"))
             : [];
         $additional = $data['additionalProperties'] ?? true;
-        if (!is_bool($additional)) {
+        if (! is_bool($additional)) {
             $additional = $this->read($additional, "{$location}/additionalProperties");
         }
 
@@ -250,7 +248,7 @@ final readonly class Reader
     /** @param array<string, mixed> $data */
     private function discriminator(array $data): ?Discriminator
     {
-        if (!isset($data['discriminator'])) {
+        if (! isset($data['discriminator'])) {
             return null;
         }
         if (is_string($data['discriminator'])) {
@@ -259,7 +257,7 @@ final readonly class Reader
         $value = Value::object($data['discriminator'], 'schema/discriminator');
         $mapping = [];
         foreach (Value::object($value['mapping'] ?? [], 'schema/discriminator/mapping') as $name => $reference) {
-            if (!is_string($reference)) {
+            if (! is_string($reference)) {
                 throw new InvalidSpecification('Discriminator mappings must be strings');
             }
             $mapping[(string) $name] = $reference;

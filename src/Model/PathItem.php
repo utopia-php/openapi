@@ -7,10 +7,10 @@ namespace Utopia\OpenAPI\Model;
 final readonly class PathItem
 {
     /**
-     * @param array<string, Operation> $operations Indexed by lowercase HTTP method.
-     * @param list<Parameter> $parameters
-     * @param list<Server> $servers
-     * @param array<string, mixed> $extensions
+     * @param  array<string, Operation>  $operations  Indexed by lowercase HTTP method.
+     * @param  list<Parameter>  $parameters
+     * @param  list<Server>  $servers
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public string $path,
@@ -20,8 +20,7 @@ final readonly class PathItem
         public string $description = '',
         public array $servers = [],
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 
     public function operation(HttpMethod $method): ?Operation
     {

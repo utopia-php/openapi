@@ -6,6 +6,4 @@ namespace Utopia\OpenAPI\Exception;
 
 use RuntimeException;
 
-class ParseException extends RuntimeException implements OpenAPIException
-{
-}
+class ParseException extends RuntimeException implements OpenAPIException {}

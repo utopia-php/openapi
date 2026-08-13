@@ -288,11 +288,14 @@ Install dependencies and run the checks:
 composer install
 composer test
 composer lint
+composer format:check
 composer rector:check
 composer validate --strict
 ```
 
-Run `composer rector` to apply automated refactoring and `composer rector:check` to check for suggested changes without modifying files.
+Run `composer format` to apply Pint formatting and `composer format:check` to verify formatting without changing files. Run `composer rector` to apply automated refactoring and `composer rector:check` to check for suggested changes without modifying files. `composer check` runs syntax, formatting, Rector, and PHPUnit checks together.
+
+GitHub Actions run PHPUnit, Composer validation, PHP syntax checks, Pint, and Rector for pull requests and pushes to `main`.
 
 The test suite covers version handling, metadata, operations, parameter inheritance, requests, responses, schemas, recursive references, security semantics, OpenAPI 2.0 normalization, and JSON Pointer escaping.
 

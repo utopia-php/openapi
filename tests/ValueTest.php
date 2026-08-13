@@ -10,13 +10,13 @@ use Utopia\OpenAPI\Parser\Value;
 
 final class ValueTest extends TestCase
 {
-    public function testEmptyArraysReadAsBothObjectAndList(): void
+    public function test_empty_arrays_read_as_both_object_and_list(): void
     {
         self::assertSame([], Value::object([], '#/x'));
         self::assertSame([], Value::list([], '#/x'));
     }
 
-    public function testObjectRejectsListsAndScalars(): void
+    public function test_object_rejects_lists_and_scalars(): void
     {
         self::assertSame(['a' => 1], Value::object(['a' => 1], '#/x'));
 
@@ -30,15 +30,15 @@ final class ValueTest extends TestCase
         }
     }
 
-    public function testObjectAcceptsStdClass(): void
+    public function test_object_accepts_std_class(): void
     {
-        $value = new \stdClass();
+        $value = new \stdClass;
         $value->a = 1;
 
         self::assertSame(['a' => 1], Value::object($value, '#/x'));
     }
 
-    public function testListRejectsMapsAndScalars(): void
+    public function test_list_rejects_maps_and_scalars(): void
     {
         self::assertSame([1, 2], Value::list([1, 2], '#/x'));
 
@@ -52,7 +52,7 @@ final class ValueTest extends TestCase
         }
     }
 
-    public function testRequiredStringNamesTheMissingKey(): void
+    public function test_required_string_names_the_missing_key(): void
     {
         self::assertSame('Pets', Value::requiredString(['title' => 'Pets'], 'title', '#/info'));
 
@@ -61,26 +61,26 @@ final class ValueTest extends TestCase
         Value::requiredString([], 'title', '#/info');
     }
 
-    public function testRequiredStringRejectsNonStrings(): void
+    public function test_required_string_rejects_non_strings(): void
     {
         $this->expectException(InvalidSpecification::class);
         Value::requiredString(['title' => 7], 'title', '#/info');
     }
 
-    public function testOptionalStringTreatsMissingAndNullAlike(): void
+    public function test_optional_string_treats_missing_and_null_alike(): void
     {
         self::assertSame('Pets', Value::optionalString(['title' => 'Pets'], 'title'));
         self::assertNull(Value::optionalString([], 'title'));
         self::assertNull(Value::optionalString(['title' => null], 'title'));
     }
 
-    public function testOptionalStringStillRejectsWrongTypes(): void
+    public function test_optional_string_still_rejects_wrong_types(): void
     {
         $this->expectException(InvalidSpecification::class);
         Value::optionalString(['title' => 7], 'title');
     }
 
-    public function testNullableIntAcceptsOnlyIntegers(): void
+    public function test_nullable_int_accepts_only_integers(): void
     {
         self::assertNull(Value::nullableInt(null, '#/x'));
         self::assertSame(3, Value::nullableInt(3, '#/x'));
@@ -90,7 +90,7 @@ final class ValueTest extends TestCase
         Value::nullableInt(3.5, '#/x/minLength');
     }
 
-    public function testNullableNumberAcceptsIntegersAndFloats(): void
+    public function test_nullable_number_accepts_integers_and_floats(): void
     {
         self::assertNull(Value::nullableNumber(null, '#/x'));
         self::assertSame(3, Value::nullableNumber(3, '#/x'));
@@ -101,7 +101,7 @@ final class ValueTest extends TestCase
         Value::nullableNumber('3', '#/x/minimum');
     }
 
-    public function testExtensionsKeepOnlyPrefixedKeysAndAreCaseInsensitive(): void
+    public function test_extensions_keep_only_prefixed_keys_and_are_case_insensitive(): void
     {
         self::assertSame(
             ['x-owner' => 'team', 'X-Trace' => true],

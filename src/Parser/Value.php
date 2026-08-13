@@ -18,7 +18,7 @@ final class Value
         if ($value instanceof \stdClass) {
             return (array) $value;
         }
-        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+        if (! is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new InvalidSpecification("Expected an object at {$location}");
         }
 
@@ -28,7 +28,7 @@ final class Value
     /** @return list<mixed> */
     public static function list(mixed $value, string $location): array
     {
-        if (!is_array($value) || !array_is_list($value)) {
+        if (! is_array($value) || ! array_is_list($value)) {
             throw new InvalidSpecification("Expected a list at {$location}");
         }
 
@@ -38,7 +38,7 @@ final class Value
     /** @param array<string, mixed> $data */
     public static function requiredString(array $data, string $key, string $location): string
     {
-        if (!array_key_exists($key, $data) || !is_string($data[$key])) {
+        if (! array_key_exists($key, $data) || ! is_string($data[$key])) {
             throw new InvalidSpecification("Expected string {$location}/{$key}");
         }
 
@@ -48,10 +48,10 @@ final class Value
     /** @param array<string, mixed> $data */
     public static function optionalString(array $data, string $key): ?string
     {
-        if (!array_key_exists($key, $data) || $data[$key] === null) {
+        if (! array_key_exists($key, $data) || $data[$key] === null) {
             return null;
         }
-        if (!is_string($data[$key])) {
+        if (! is_string($data[$key])) {
             throw new InvalidSpecification("Expected '{$key}' to be a string");
         }
 
@@ -63,7 +63,7 @@ final class Value
         if ($value === null) {
             return null;
         }
-        if (!is_int($value)) {
+        if (! is_int($value)) {
             throw new InvalidSpecification("Expected integer at {$location}");
         }
 
@@ -75,7 +75,7 @@ final class Value
         if ($value === null) {
             return null;
         }
-        if (!is_int($value) && !is_float($value)) {
+        if (! is_int($value) && ! is_float($value)) {
             throw new InvalidSpecification("Expected number at {$location}");
         }
 
@@ -83,7 +83,7 @@ final class Value
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public static function extensions(array $data): array

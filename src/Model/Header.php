@@ -9,8 +9,8 @@ use Utopia\OpenAPI\Model\Schema\Schema;
 final readonly class Header
 {
     /**
-     * @param array<string, MediaType> $content
-     * @param array<string, mixed> $extensions
+     * @param  array<string, MediaType>  $content
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public string $description = '',
@@ -21,6 +21,5 @@ final readonly class Header
         public ?string $style = null,
         public ?bool $explode = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

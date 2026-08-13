@@ -10,6 +10,5 @@ final readonly class Discriminator
     public function __construct(
         public string $propertyName,
         public array $mapping = [],
-    ) {
-    }
+    ) {}
 }

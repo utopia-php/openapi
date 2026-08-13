@@ -19,7 +19,7 @@ use Utopia\OpenAPI\Version;
 
 final class ParserTest extends TestCase
 {
-    public function testParsesOpenApi31IntoCanonicalModel(): void
+    public function test_parses_open_api31_into_canonical_model(): void
     {
         $document = [
             'openapi' => '3.1.1',
@@ -87,7 +87,7 @@ final class ParserTest extends TestCase
         self::assertInstanceOf(ReferenceSchema::class, $get->responses['200']->content['application/json']->schema);
     }
 
-    public function testParsesOpenApi30NullabilityAndRequestBody(): void
+    public function test_parses_open_api30_nullability_and_request_body(): void
     {
         $spec = Parser::parse([
             'openapi' => '3.0.3',
@@ -105,7 +105,7 @@ final class ParserTest extends TestCase
         self::assertTrue($body->content['application/json']->schema?->nullable);
     }
 
-    public function testParsesOpenApi2Directly(): void
+    public function test_parses_open_api2_directly(): void
     {
         $spec = Parser::parse([
             'swagger' => '2.0',
@@ -132,7 +132,7 @@ final class ParserTest extends TestCase
         self::assertInstanceOf(ReferenceSchema::class, $operation?->responses['200']->content['application/json']->schema);
     }
 
-    public function testParsesOpenApi2FormDataAsRequestBody(): void
+    public function test_parses_open_api2_form_data_as_request_body(): void
     {
         $spec = Parser::parse([
             'swagger' => '2.0',
@@ -153,7 +153,7 @@ final class ParserTest extends TestCase
         self::assertSame('binary', $body?->content['multipart/form-data']->schema->properties['file']->format);
     }
 
-    public function testResolvesEscapedLocalJsonPointerAndDetectsReferenceCycles(): void
+    public function test_resolves_escaped_local_json_pointer_and_detects_reference_cycles(): void
     {
         $resolver = new LocalResolver([
             'components' => ['parameters' => ['a/b~c' => ['name' => 'id']]],
@@ -166,7 +166,7 @@ final class ParserTest extends TestCase
         $resolver->resolveObject('#/a');
     }
 
-    public function testEmptyJsonObjectsAreNotConfusedWithLists(): void
+    public function test_empty_json_objects_are_not_confused_with_lists(): void
     {
         $spec = Parser::parse('{"openapi":"3.1.0","info":{"title":"Empty","version":"1"},"paths":{},"components":{"schemas":{"Anything":{}}}}');
 
@@ -174,7 +174,7 @@ final class ParserTest extends TestCase
         self::assertArrayHasKey('Anything', $spec->schemas);
     }
 
-    public function testControlledErrors(): void
+    public function test_controlled_errors(): void
     {
         try {
             Parser::parse('{');

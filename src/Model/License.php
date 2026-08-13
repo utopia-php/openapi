@@ -12,6 +12,5 @@ final readonly class License
         public ?string $url = null,
         public ?string $identifier = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

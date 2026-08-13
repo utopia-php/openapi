@@ -26,7 +26,7 @@ final class ReaderTest extends TestCase
         return new Reader(Dialect::for($version));
     }
 
-    public function testBooleanSchemasAreReadOnlyUnderTheThreeOneDialect(): void
+    public function test_boolean_schemas_are_read_only_under_the_three_one_dialect(): void
     {
         $reader = $this->reader(Version::V3_1);
 
@@ -37,7 +37,7 @@ final class ReaderTest extends TestCase
         $this->reader(Version::V3_0)->read(true, '#/x');
     }
 
-    public function testTypeArraysAreReadOnlyUnderTheThreeOneDialect(): void
+    public function test_type_arrays_are_read_only_under_the_three_one_dialect(): void
     {
         $reader = $this->reader(Version::V3_1);
 
@@ -55,25 +55,25 @@ final class ReaderTest extends TestCase
         $this->reader(Version::V3_0)->read(['type' => ['string', 'null']], '#/x');
     }
 
-    public function testConstBecomesASingleValueEnumOnlyUnderTheThreeOneDialect(): void
+    public function test_const_becomes_a_single_value_enum_only_under_the_three_one_dialect(): void
     {
         self::assertSame(['pets'], $this->reader(Version::V3_1)->read(['type' => 'string', 'const' => 'pets'], '#/x')->enum);
         self::assertSame([], $this->reader(Version::V3_0)->read(['type' => 'string', 'const' => 'pets'], '#/x')->enum);
     }
 
-    public function testAnExplicitEnumWinsOverConst(): void
+    public function test_an_explicit_enum_wins_over_const(): void
     {
         self::assertSame(['a', 'b'], $this->reader(Version::V3_1)->read(['type' => 'string', 'const' => 'c', 'enum' => ['a', 'b']], '#/x')->enum);
     }
 
-    public function testNullabilityIsReadFromEitherKeyword(): void
+    public function test_nullability_is_read_from_either_keyword(): void
     {
         self::assertTrue($this->reader(Version::V3_0)->read(['type' => 'string', 'nullable' => true], '#/x')->nullable);
         self::assertTrue($this->reader(Version::V2)->read(['type' => 'string', 'x-nullable' => true], '#/x')->nullable);
         self::assertFalse($this->reader(Version::V3_0)->read(['type' => 'string'], '#/x')->nullable);
     }
 
-    public function testReferencesAreLeftUnexpandedSoRecursiveGraphsTerminate(): void
+    public function test_references_are_left_unexpanded_so_recursive_graphs_terminate(): void
     {
         $schema = $this->reader(Version::V3_1)->read(['$ref' => '#/components/schemas/Pet'], '#/x');
 
@@ -81,7 +81,7 @@ final class ReaderTest extends TestCase
         self::assertSame('#/components/schemas/Pet', $schema->reference);
     }
 
-    public function testCompositionAndNot(): void
+    public function test_composition_and_not(): void
     {
         $reader = $this->reader(Version::V3_0);
 
@@ -98,7 +98,7 @@ final class ReaderTest extends TestCase
         self::assertInstanceOf(StringSchema::class, $negated->not);
     }
 
-    public function testDiscriminatorIsReadFromBothTheStringAndObjectForms(): void
+    public function test_discriminator_is_read_from_both_the_string_and_object_forms(): void
     {
         $reader = $this->reader(Version::V3_0);
 
@@ -115,7 +115,7 @@ final class ReaderTest extends TestCase
         self::assertSame(['cat' => '#/components/schemas/Cat'], $fromObject->discriminator?->mapping);
     }
 
-    public function testObjectAndArrayTypesAreImpliedFromTheirKeywords(): void
+    public function test_object_and_array_types_are_implied_from_their_keywords(): void
     {
         $reader = $this->reader(Version::V3_0);
 
@@ -125,7 +125,7 @@ final class ReaderTest extends TestCase
         self::assertInstanceOf(AnySchema::class, $reader->read([], '#/x'));
     }
 
-    public function testArrayWithoutItemsAcceptsAnything(): void
+    public function test_array_without_items_accepts_anything(): void
     {
         $schema = $this->reader(Version::V3_0)->read(['type' => 'array'], '#/x');
 
@@ -133,7 +133,7 @@ final class ReaderTest extends TestCase
         self::assertInstanceOf(AnySchema::class, $schema->items);
     }
 
-    public function testAdditionalPropertiesReadsAsBooleanOrSchema(): void
+    public function test_additional_properties_reads_as_boolean_or_schema(): void
     {
         $reader = $this->reader(Version::V3_0);
 
@@ -150,7 +150,7 @@ final class ReaderTest extends TestCase
      * The 'file' type is 2.0-only in the specification but is accepted under every
      * dialect here. Pinning current behaviour: gating it is a separate change.
      */
-    public function testFileTypeReadsAsBinaryStringUnderEveryDialect(): void
+    public function test_file_type_reads_as_binary_string_under_every_dialect(): void
     {
         foreach ([Version::V2, Version::V3_0, Version::V3_1] as $version) {
             $schema = $this->reader($version)->read(['type' => 'file'], '#/x');
@@ -163,7 +163,7 @@ final class ReaderTest extends TestCase
      * Numeric exclusive bounds are draft-2020 shaped, but are accepted under every
      * dialect here. Pinning current behaviour: gating it is a separate change.
      */
-    public function testNumericExclusiveBoundsCollapseIntoBoundPlusFlag(): void
+    public function test_numeric_exclusive_bounds_collapse_into_bound_plus_flag(): void
     {
         foreach ([Version::V2, Version::V3_0, Version::V3_1] as $version) {
             $schema = $this->reader($version)->read(['type' => 'integer', 'exclusiveMinimum' => 5], '#/x');
@@ -178,7 +178,7 @@ final class ReaderTest extends TestCase
         self::assertTrue($boolean->exclusiveMinimum);
     }
 
-    public function testParameterFieldsAreLiftedIntoASchemaAndNonSchemaKeysDropped(): void
+    public function test_parameter_fields_are_lifted_into_a_schema_and_non_schema_keys_dropped(): void
     {
         $schema = $this->reader(Version::V2)->readParameterFields([
             'name' => 'limit',
@@ -195,7 +195,7 @@ final class ReaderTest extends TestCase
         self::assertSame(['x-nullable' => true], $schema->extensions, "'x-nullable' is read as nullability and still kept as an extension");
     }
 
-    public function testExtensionsAreCarriedOntoTheSchema(): void
+    public function test_extensions_are_carried_onto_the_schema(): void
     {
         self::assertSame(
             ['x-appwrite' => ['method' => 'get']],
@@ -203,7 +203,7 @@ final class ReaderTest extends TestCase
         );
     }
 
-    public function testUnsupportedTypeNamesTheLocation(): void
+    public function test_unsupported_type_names_the_location(): void
     {
         $this->expectException(InvalidSpecification::class);
         $this->expectExceptionMessage('#/components/schemas/Pet');
@@ -211,7 +211,7 @@ final class ReaderTest extends TestCase
         $this->reader(Version::V3_1)->read(['type' => 'widget'], '#/components/schemas/Pet');
     }
 
-    public function testNestedFailuresNameTheirOwnLocation(): void
+    public function test_nested_failures_name_their_own_location(): void
     {
         $this->expectException(InvalidSpecification::class);
         $this->expectExceptionMessage('#/x/properties/inner/items');

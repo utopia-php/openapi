@@ -13,6 +13,5 @@ final readonly class Example
         public mixed $value = null,
         public ?string $externalValue = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

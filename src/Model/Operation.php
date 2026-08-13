@@ -7,12 +7,12 @@ namespace Utopia\OpenAPI\Model;
 final readonly class Operation
 {
     /**
-     * @param list<string> $tags
-     * @param list<Parameter> $parameters
-     * @param array<string, Response> $responses
-     * @param list<SecurityRequirement> $security
-     * @param list<Server> $servers
-     * @param array<string, mixed> $extensions
+     * @param  list<string>  $tags
+     * @param  list<Parameter>  $parameters
+     * @param  array<string, Response>  $responses
+     * @param  list<SecurityRequirement>  $security
+     * @param  list<Server>  $servers
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public string $id,
@@ -29,6 +29,5 @@ final readonly class Operation
         public array $servers = [],
         public ?ExternalDocumentation $externalDocumentation = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

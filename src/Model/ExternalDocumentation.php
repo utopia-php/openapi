@@ -11,6 +11,5 @@ final readonly class ExternalDocumentation
         public string $url,
         public string $description = '',
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

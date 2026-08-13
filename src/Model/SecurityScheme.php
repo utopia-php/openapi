@@ -7,8 +7,8 @@ namespace Utopia\OpenAPI\Model;
 final readonly class SecurityScheme
 {
     /**
-     * @param array<string, OAuthFlow> $flows
-     * @param array<string, mixed> $extensions
+     * @param  array<string, OAuthFlow>  $flows
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public SecuritySchemeType $type,
@@ -20,6 +20,5 @@ final readonly class SecurityScheme
         public array $flows = [],
         public ?string $openIdConnectUrl = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

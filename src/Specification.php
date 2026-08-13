@@ -17,13 +17,13 @@ use Utopia\OpenAPI\Model\Tag;
 final readonly class Specification
 {
     /**
-     * @param list<Server> $servers
-     * @param array<string, Tag> $tags
-     * @param array<string, PathItem> $paths
-     * @param array<string, Schema> $schemas
-     * @param array<string, SecurityScheme> $securitySchemes
-     * @param list<SecurityRequirement> $security
-     * @param array<string, mixed> $extensions
+     * @param  list<Server>  $servers
+     * @param  array<string, Tag>  $tags
+     * @param  array<string, PathItem>  $paths
+     * @param  array<string, Schema>  $schemas
+     * @param  array<string, SecurityScheme>  $securitySchemes
+     * @param  list<SecurityRequirement>  $security
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public Version $version,
@@ -38,8 +38,7 @@ final readonly class Specification
         public string $sourceVersion = '',
         public ?string $jsonSchemaDialect = null,
         public ?ExternalDocumentation $externalDocumentation = null,
-    ) {
-    }
+    ) {}
 
     /** @return list<Operation> */
     public function operations(): array

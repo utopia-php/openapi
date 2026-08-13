@@ -7,8 +7,8 @@ namespace Utopia\OpenAPI\Model;
 final readonly class Encoding
 {
     /**
-     * @param array<string, Header> $headers
-     * @param array<string, mixed> $extensions
+     * @param  array<string, Header>  $headers
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public ?string $contentType = null,
@@ -17,6 +17,5 @@ final readonly class Encoding
         public ?bool $explode = null,
         public bool $allowReserved = false,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

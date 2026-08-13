@@ -98,6 +98,7 @@ abstract class AbstractReader implements Reader
     protected function parseExternalDocumentation(mixed $raw, string $location): ExternalDocumentation
     {
         $data = Value::object($raw, $location);
+
         return new ExternalDocumentation(
             url: Value::requiredString($data, 'url', $location),
             description: Value::optionalString($data, 'description') ?? '',
@@ -188,6 +189,7 @@ abstract class AbstractReader implements Reader
                 extensions: Value::extensions($data),
             );
         }
+
         return $content;
     }
 
@@ -214,6 +216,7 @@ abstract class AbstractReader implements Reader
                 extensions: Value::extensions($data),
             );
         }
+
         return $headers;
     }
 
@@ -225,6 +228,7 @@ abstract class AbstractReader implements Reader
             $reference = Value::requiredString($data, '$ref', $location);
             $data = Value::object($this->resolver->resolveObject($reference), $reference);
         }
+
         return $data;
     }
 
@@ -241,6 +245,7 @@ abstract class AbstractReader implements Reader
             } catch (\ValueError) {
                 throw new InvalidSpecification("Unsupported API key location '{$locationValue}' at {$location}/in");
             }
+
             return new SecurityScheme(
                 SecuritySchemeType::API_KEY,
                 Value::optionalString($data, 'description') ?? '',
@@ -251,6 +256,7 @@ abstract class AbstractReader implements Reader
         }
         if ($type === 'oauth2') {
             $flows = $openApi2 ? $this->parseOpenApi2OAuthFlows($data, $location) : $this->parseOAuthFlows($data['flows'] ?? [], "{$location}/flows");
+
             return new SecurityScheme(SecuritySchemeType::OAUTH2, Value::optionalString($data, 'description') ?? '', flows: $flows, extensions: Value::extensions($data));
         }
         if ($type === 'http') {
@@ -284,6 +290,7 @@ abstract class AbstractReader implements Reader
                 scopes: $this->stringMap($data['scopes'] ?? [], "{$location}/{$name}/scopes"),
             );
         }
+
         return $flows;
     }
 
@@ -298,6 +305,7 @@ abstract class AbstractReader implements Reader
             'accessCode' => 'authorizationCode',
             default => throw new InvalidSpecification("Unsupported OAuth flow '{$flow}' at {$location}"),
         };
+
         return [$name => new OAuthFlow(
             authorizationUrl: Value::optionalString($data, 'authorizationUrl'),
             tokenUrl: Value::optionalString($data, 'tokenUrl'),
@@ -310,11 +318,12 @@ abstract class AbstractReader implements Reader
     {
         $result = [];
         foreach (Value::object($raw, $location) as $key => $value) {
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 throw new InvalidSpecification("Expected string at {$location}/{$key}");
             }
             $result[(string) $key] = $value;
         }
+
         return $result;
     }
 }

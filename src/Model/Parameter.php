@@ -9,8 +9,8 @@ use Utopia\OpenAPI\Model\Schema\Schema;
 final readonly class Parameter
 {
     /**
-     * @param array<string, MediaType> $content
-     * @param array<string, mixed> $extensions
+     * @param  array<string, MediaType>  $content
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public string $name,
@@ -25,11 +25,10 @@ final readonly class Parameter
         public ?bool $explode = null,
         public bool $allowReserved = false,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 
     public function identity(): string
     {
-        return $this->location->value . "\0" . $this->name;
+        return $this->location->value."\0".$this->name;
     }
 }

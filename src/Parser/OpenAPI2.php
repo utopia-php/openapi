@@ -6,6 +6,7 @@ namespace Utopia\OpenAPI\Parser;
 
 use Utopia\OpenAPI\Exception\InvalidSpecification;
 use Utopia\OpenAPI\Model\Encoding;
+use Utopia\OpenAPI\Model\Example;
 use Utopia\OpenAPI\Model\HttpMethod;
 use Utopia\OpenAPI\Model\MediaType;
 use Utopia\OpenAPI\Model\Operation;
@@ -67,8 +68,9 @@ final class OpenAPI2 extends AbstractReader
         if ($schemes === []) {
             $schemes = ['http'];
         }
+
         return array_map(
-            static fn (string $scheme): Server => new Server(rtrim($scheme . '://' . $host, '/') . ($basePath === '/' ? '' : $basePath)),
+            static fn (string $scheme): Server => new Server(rtrim($scheme.'://'.$host, '/').($basePath === '/' ? '' : $basePath)),
             $schemes,
         );
     }
@@ -78,12 +80,12 @@ final class OpenAPI2 extends AbstractReader
     {
         $paths = [];
         foreach (Value::object($this->document['paths'] ?? [], '#/paths') as $path => $raw) {
-            $location = '#/paths/' . str_replace(['~', '/'], ['~0', '~1'], (string) $path);
+            $location = '#/paths/'.str_replace(['~', '/'], ['~0', '~1'], (string) $path);
             $data = $this->resolveObject($raw, $location);
             $pathParameters = $this->rawParameters($data['parameters'] ?? [], "{$location}/parameters");
             $operations = [];
             foreach (HttpMethod::cases() as $method) {
-                if (!array_key_exists($method->value, $data)) {
+                if (! array_key_exists($method->value, $data)) {
                     continue;
                 }
                 $operations[$method->value] = $this->parseOperation((string) $path, $method, $data[$method->value], $pathParameters, $rootSecurity, $rootConsumes, $rootProduces, "{$location}/{$method->value}");
@@ -96,6 +98,7 @@ final class OpenAPI2 extends AbstractReader
             }
             $paths[(string) $path] = new PathItem((string) $path, $operations, $parsedPathParameters, extensions: Value::extensions($data));
         }
+
         return $paths;
     }
 
@@ -186,6 +189,7 @@ final class OpenAPI2 extends AbstractReader
         foreach (Value::list($raw, $location) as $index => $item) {
             $parameters[] = $this->resolveObject($item, "{$location}/{$index}");
         }
+
         return $parameters;
     }
 
@@ -198,9 +202,10 @@ final class OpenAPI2 extends AbstractReader
             throw new InvalidSpecification("Unsupported parameter location '{$locationValue}' at {$location}/in");
         }
         $required = (bool) ($data['required'] ?? false);
-        if ($parameterLocation === ParameterLocation::PATH && !$required) {
+        if ($parameterLocation === ParameterLocation::PATH && ! $required) {
             throw new InvalidSpecification("Path parameter must be required at {$location}");
         }
+
         return new Parameter(
             name: Value::requiredString($data, 'name', $location),
             location: $parameterLocation,
@@ -236,16 +241,18 @@ final class OpenAPI2 extends AbstractReader
         foreach ($consumes as $mediaName) {
             $content[$mediaName] = new MediaType($schema, encoding: $encoding);
         }
+
         return new RequestBody(required: $required !== [], content: $content);
     }
 
-    /** @return array<string, \Utopia\OpenAPI\Model\Example> */
+    /** @return array<string, Example> */
     private function openApi2Examples(mixed $raw, string $location): array
     {
         $examples = [];
         foreach (Value::object($raw, $location) as $mediaName => $value) {
-            $examples[(string) $mediaName] = new \Utopia\OpenAPI\Model\Example(value: $value);
+            $examples[(string) $mediaName] = new Example(value: $value);
         }
+
         return $examples;
     }
 
@@ -265,12 +272,13 @@ final class OpenAPI2 extends AbstractReader
                 $merged[] = $parameter;
             }
         }
+
         return array_values($merged);
     }
 
     private function rawParameterIdentity(array $parameter): string
     {
-        return (string) ($parameter['in'] ?? '') . "\0" . (string) ($parameter['name'] ?? '');
+        return (string) ($parameter['in'] ?? '')."\0".(string) ($parameter['name'] ?? '');
     }
 
     /** @return list<string> */

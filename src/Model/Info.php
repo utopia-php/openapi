@@ -15,6 +15,5 @@ final readonly class Info
         public ?Contact $contact = null,
         public ?License $license = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

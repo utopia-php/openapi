@@ -6,9 +6,7 @@ namespace Utopia\OpenAPI\Reference;
 
 final readonly class Reference
 {
-    public function __construct(public string $value)
-    {
-    }
+    public function __construct(public string $value) {}
 
     public function isLocal(): bool
     {

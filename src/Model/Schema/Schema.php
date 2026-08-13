@@ -7,8 +7,8 @@ namespace Utopia\OpenAPI\Model\Schema;
 abstract readonly class Schema
 {
     /**
-     * @param list<mixed> $enum
-     * @param array<string, mixed> $extensions
+     * @param  list<mixed>  $enum
+     * @param  array<string, mixed>  $extensions
      */
     public function __construct(
         public ?string $title = null,
@@ -22,6 +22,5 @@ abstract readonly class Schema
         public bool $deprecated = false,
         public mixed $example = null,
         public array $extensions = [],
-    ) {
-    }
+    ) {}
 }

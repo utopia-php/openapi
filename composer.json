@@ -8,6 +8,7 @@
         "ext-json": "*"
     },
     "require-dev": {
+        "laravel/pint": "^1.0",
         "phpunit/phpunit": "^13.3",
         "rector/rector": "^2.0"
     },
@@ -24,8 +25,16 @@
     "scripts": {
         "test": "phpunit",
         "lint": "find src tests -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "format": "pint",
+        "format:check": "pint --test",
         "rector": "rector process",
-        "rector:check": "rector process --dry-run"
+        "rector:check": "rector process --dry-run",
+        "check": [
+            "@lint",
+            "@format:check",
+            "@rector:check",
+            "@test"
+        ]
     },
     "config": {
         "sort-packages": true

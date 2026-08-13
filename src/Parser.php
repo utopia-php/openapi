@@ -29,6 +29,7 @@ final class Parser
         }
 
         $reader = $this->reader($detected, $sourceVersion, $document);
+
         return $reader->read();
     }
 
@@ -45,6 +46,7 @@ final class Parser
             if ($input !== [] && array_is_list($input)) {
                 throw new InvalidSpecification('The OpenAPI document root must be an object');
             }
+
             return $input;
         }
 
@@ -52,10 +54,10 @@ final class Parser
             $decoded = json_decode($input, false, 512, JSON_THROW_ON_ERROR);
             $document = $this->normalizeDecodedValue($decoded);
         } catch (JsonException $exception) {
-            throw new ParseException('Invalid JSON: ' . $exception->getMessage(), previous: $exception);
+            throw new ParseException('Invalid JSON: '.$exception->getMessage(), previous: $exception);
         }
 
-        if (!is_array($document) || ($document !== [] && array_is_list($document))) {
+        if (! is_array($document) || ($document !== [] && array_is_list($document))) {
             throw new InvalidSpecification('The OpenAPI document root must be an object');
         }
 
@@ -69,11 +71,13 @@ final class Parser
             foreach ((array) $value as $key => $item) {
                 $object[$key] = $this->normalizeDecodedValue($item);
             }
+
             return $object;
         }
         if (is_array($value)) {
             return array_map($this->normalizeDecodedValue(...), $value);
         }
+
         return $value;
     }
 
@@ -81,15 +85,17 @@ final class Parser
     private function detectVersion(array $document): array
     {
         if (array_key_exists('swagger', $document)) {
-            if (!is_string($document['swagger'])) {
+            if (! is_string($document['swagger'])) {
                 throw new InvalidSpecification("The 'swagger' version must be a string");
             }
+
             return [Version::fromDocumentVersion($document['swagger']), $document['swagger']];
         }
         if (array_key_exists('openapi', $document)) {
-            if (!is_string($document['openapi'])) {
+            if (! is_string($document['openapi'])) {
                 throw new InvalidSpecification("The 'openapi' version must be a string");
             }
+
             return [Version::fromDocumentVersion($document['openapi']), $document['openapi']];
         }
 

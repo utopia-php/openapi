@@ -57,7 +57,7 @@ abstract class OpenAPI3 extends AbstractReader
     {
         $paths = [];
         foreach (Value::object($this->document['paths'] ?? [], '#/paths') as $path => $raw) {
-            $location = '#/paths/' . str_replace(['~', '/'], ['~0', '~1'], (string) $path);
+            $location = '#/paths/'.str_replace(['~', '/'], ['~0', '~1'], (string) $path);
             $data = $this->resolveObject($raw, $location);
             $pathParameters = $this->parseParameters($data['parameters'] ?? [], "{$location}/parameters");
             $pathServers = array_key_exists('servers', $data)
@@ -65,7 +65,7 @@ abstract class OpenAPI3 extends AbstractReader
                 : $rootServers;
             $operations = [];
             foreach (HttpMethod::cases() as $method) {
-                if (!array_key_exists($method->value, $data)) {
+                if (! array_key_exists($method->value, $data)) {
                     continue;
                 }
                 $operations[$method->value] = $this->parseOperation(
@@ -88,6 +88,7 @@ abstract class OpenAPI3 extends AbstractReader
                 extensions: Value::extensions($data),
             );
         }
+
         return $paths;
     }
 
@@ -168,7 +169,7 @@ abstract class OpenAPI3 extends AbstractReader
                 throw new InvalidSpecification("Unsupported parameter location '{$locationValue}' at {$location}/{$index}/in");
             }
             $required = (bool) ($data['required'] ?? false);
-            if ($parameterLocation === ParameterLocation::PATH && !$required) {
+            if ($parameterLocation === ParameterLocation::PATH && ! $required) {
                 throw new InvalidSpecification("Path parameter must be required at {$location}/{$index}");
             }
             $parameters[] = new Parameter(
@@ -186,6 +187,7 @@ abstract class OpenAPI3 extends AbstractReader
                 extensions: Value::extensions($data),
             );
         }
+
         return $parameters;
     }
 
@@ -206,6 +208,7 @@ abstract class OpenAPI3 extends AbstractReader
                 $merged[] = $parameter;
             }
         }
+
         return array_values($merged);
     }
 }
