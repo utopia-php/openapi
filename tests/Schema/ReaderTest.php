@@ -137,6 +137,14 @@ final class ReaderTest extends TestCase
     {
         $reader = $this->reader(Version::V3_0);
 
+        $unspecified = $reader->read(['type' => 'object'], '#/x');
+        self::assertInstanceOf(ObjectSchema::class, $unspecified);
+        self::assertNull($unspecified->additionalProperties);
+
+        $open = $reader->read(['type' => 'object', 'additionalProperties' => true], '#/x');
+        self::assertInstanceOf(ObjectSchema::class, $open);
+        self::assertTrue($open->additionalProperties);
+
         $closed = $reader->read(['type' => 'object', 'additionalProperties' => false], '#/x');
         self::assertInstanceOf(ObjectSchema::class, $closed);
         self::assertFalse($closed->additionalProperties);

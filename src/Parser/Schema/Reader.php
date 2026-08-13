@@ -230,8 +230,8 @@ final readonly class Reader
         $required = isset($data['required'])
             ? array_map(strval(...), Value::list($data['required'], "{$location}/required"))
             : [];
-        $additional = $data['additionalProperties'] ?? true;
-        if (! is_bool($additional)) {
+        $additional = $data['additionalProperties'] ?? null;
+        if ($additional !== null && ! is_bool($additional)) {
             $additional = $this->read($additional, "{$location}/additionalProperties");
         }
 

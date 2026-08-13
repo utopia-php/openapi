@@ -13,7 +13,7 @@ final readonly class ObjectSchema extends Schema
     public function __construct(
         public array $properties = [],
         public array $required = [],
-        public bool|Schema $additionalProperties = true,
+        public bool|Schema|null $additionalProperties = null,
         public ?int $minProperties = null,
         public ?int $maxProperties = null,
         ?string $title = null,
