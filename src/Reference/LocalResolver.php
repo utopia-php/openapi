@@ -14,6 +14,7 @@ final readonly class LocalResolver implements Resolver
     {
     }
 
+    #[\Override]
     public function resolve(Reference $reference, ResolutionContext $context = new ResolutionContext()): mixed
     {
         $value = $reference->value;

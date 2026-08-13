@@ -11,6 +11,8 @@ use Utopia\OpenAPI\Parser\OpenAPI2;
 use Utopia\OpenAPI\Parser\OpenAPI30;
 use Utopia\OpenAPI\Parser\OpenAPI31;
 use Utopia\OpenAPI\Parser\Reader;
+use Utopia\OpenAPI\Parser\Schema\Dialect;
+use Utopia\OpenAPI\Parser\Schema\Reader as SchemaReader;
 
 final class Parser
 {
@@ -33,7 +35,7 @@ final class Parser
     /** @param string|array<string, mixed> $input */
     public static function parse(string|array $input, ?Version $version = null): Specification
     {
-        return (new self())->read($input, $version);
+        return new self()->read($input, $version);
     }
 
     /** @return array<string, mixed> */
@@ -70,7 +72,7 @@ final class Parser
             return $object;
         }
         if (is_array($value)) {
-            return array_map(fn (mixed $item): mixed => $this->normalizeDecodedValue($item), $value);
+            return array_map($this->normalizeDecodedValue(...), $value);
         }
         return $value;
     }
@@ -97,10 +99,12 @@ final class Parser
     /** @param array<string, mixed> $document */
     private function reader(Version $version, string $sourceVersion, array $document): Reader
     {
+        $schemas = new SchemaReader(Dialect::for($version));
+
         return match ($version) {
-            Version::V2 => new OpenAPI2($document, $version, $sourceVersion),
-            Version::V3_0 => new OpenAPI30($document, $version, $sourceVersion),
-            Version::V3_1 => new OpenAPI31($document, $version, $sourceVersion),
+            Version::V2 => new OpenAPI2($document, $version, $sourceVersion, $schemas),
+            Version::V3_0 => new OpenAPI30($document, $version, $sourceVersion, $schemas),
+            Version::V3_1 => new OpenAPI31($document, $version, $sourceVersion, $schemas),
         };
     }
 }

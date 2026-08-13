@@ -168,10 +168,10 @@ final class CrossVersionFixtureTest extends TestCase
 
         return [
             'info' => [$specification->info->title, $specification->info->description, $specification->info->version],
-            'servers' => array_map(static fn ($server): string => $server->url, $specification->servers),
+            'servers' => array_map(static fn (\Utopia\OpenAPI\Model\Server $server): string => $server->url, $specification->servers),
             'tags' => array_keys($specification->tags),
             'operations' => array_map(
-                static fn ($operation): array => [$operation->id, $operation->method->value, $operation->path, $operation->tags],
+                static fn (\Utopia\OpenAPI\Model\Operation $operation): array => [$operation->id, $operation->method->value, $operation->path, $operation->tags],
                 $specification->operations(),
             ),
             'create' => [
@@ -184,11 +184,11 @@ final class CrossVersionFixtureTest extends TestCase
             'get' => [
                 'parameter' => [$get->parameters[0]->name, $get->parameters[0]->location->value, $get->parameters[0]->description],
                 'responses' => array_keys($get->responses),
-                'security' => array_map(static fn ($requirement): array => $requirement->schemes, $get->security),
+                'security' => array_map(static fn (\Utopia\OpenAPI\Model\SecurityRequirement $requirement): array => $requirement->schemes, $get->security),
             ],
             'deleteSecurity' => $delete->security,
             'securitySchemes' => array_map(
-                static fn ($scheme): array => [$scheme->type->value, $scheme->name, $scheme->location?->value, $scheme->scheme],
+                static fn (\Utopia\OpenAPI\Model\SecurityScheme $scheme): array => [$scheme->type->value, $scheme->name, $scheme->location?->value, $scheme->scheme],
                 $specification->securitySchemes,
             ),
             'pet' => [

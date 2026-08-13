@@ -20,6 +20,7 @@ use Utopia\OpenAPI\Specification;
 
 final class OpenAPI2 extends AbstractReader
 {
+    #[\Override]
     public function read(): Specification
     {
         $security = $this->parseSecurity($this->document['security'] ?? [], '#/security');
@@ -27,12 +28,12 @@ final class OpenAPI2 extends AbstractReader
         $produces = $this->mediaNames($this->document['produces'] ?? [], '#/produces');
 
         $schemas = [];
-        foreach ($this->object($this->document['definitions'] ?? [], '#/definitions') as $name => $raw) {
-            $schemas[(string) $name] = $this->parseSchema($raw, "#/definitions/{$name}");
+        foreach (Value::object($this->document['definitions'] ?? [], '#/definitions') as $name => $raw) {
+            $schemas[(string) $name] = $this->schemas->read($raw, "#/definitions/{$name}");
         }
 
         $securitySchemes = [];
-        foreach ($this->object($this->document['securityDefinitions'] ?? [], '#/securityDefinitions') as $name => $raw) {
+        foreach (Value::object($this->document['securityDefinitions'] ?? [], '#/securityDefinitions') as $name => $raw) {
             $data = $this->resolveObject($raw, "#/securityDefinitions/{$name}");
             $securitySchemes[(string) $name] = $this->parseSecurityScheme($data, "#/securityDefinitions/{$name}", true);
         }
@@ -46,7 +47,7 @@ final class OpenAPI2 extends AbstractReader
             schemas: $schemas,
             securitySchemes: $securitySchemes,
             security: $security,
-            extensions: $this->extensions($this->document),
+            extensions: Value::extensions($this->document),
             sourceVersion: $this->sourceVersion,
             externalDocumentation: isset($this->document['externalDocs'])
                 ? $this->parseExternalDocumentation($this->document['externalDocs'], '#/externalDocs')
@@ -57,8 +58,8 @@ final class OpenAPI2 extends AbstractReader
     /** @return list<Server> */
     private function parseOpenApi2Servers(): array
     {
-        $host = $this->optionalString($this->document, 'host');
-        $basePath = $this->optionalString($this->document, 'basePath') ?? '';
+        $host = Value::optionalString($this->document, 'host');
+        $basePath = Value::optionalString($this->document, 'basePath') ?? '';
         $schemes = $this->mediaNames($this->document['schemes'] ?? [], '#/schemes');
         if ($host === null) {
             return [];
@@ -76,7 +77,7 @@ final class OpenAPI2 extends AbstractReader
     private function parsePaths(array $rootSecurity, array $rootConsumes, array $rootProduces): array
     {
         $paths = [];
-        foreach ($this->object($this->document['paths'] ?? [], '#/paths') as $path => $raw) {
+        foreach (Value::object($this->document['paths'] ?? [], '#/paths') as $path => $raw) {
             $location = '#/paths/' . str_replace(['~', '/'], ['~0', '~1'], (string) $path);
             $data = $this->resolveObject($raw, $location);
             $pathParameters = $this->rawParameters($data['parameters'] ?? [], "{$location}/parameters");
@@ -93,14 +94,14 @@ final class OpenAPI2 extends AbstractReader
                     $parsedPathParameters[] = $this->parseParameter($parameter, "{$location}/parameters/{$index}");
                 }
             }
-            $paths[(string) $path] = new PathItem((string) $path, $operations, $parsedPathParameters, extensions: $this->extensions($data));
+            $paths[(string) $path] = new PathItem((string) $path, $operations, $parsedPathParameters, extensions: Value::extensions($data));
         }
         return $paths;
     }
 
     private function parseOperation(string $path, HttpMethod $method, mixed $raw, array $pathParameters, array $rootSecurity, array $rootConsumes, array $rootProduces, string $location): Operation
     {
-        $data = $this->object($raw, $location);
+        $data = Value::object($raw, $location);
         $operationParameters = $this->rawParameters($data['parameters'] ?? [], "{$location}/parameters");
         $rawParameters = $this->mergeRawParameters($pathParameters, $operationParameters);
         $consumes = array_key_exists('consumes', $data) ? $this->mediaNames($data['consumes'], "{$location}/consumes") : $rootConsumes;
@@ -115,16 +116,16 @@ final class OpenAPI2 extends AbstractReader
                 if ($body !== null) {
                     throw new InvalidSpecification("Multiple body parameters at {$location}");
                 }
-                $schema = array_key_exists('schema', $parameter) ? $this->parseSchema($parameter['schema'], "{$location}/parameters/{$index}/schema") : null;
+                $schema = array_key_exists('schema', $parameter) ? $this->schemas->read($parameter['schema'], "{$location}/parameters/{$index}/schema") : null;
                 $content = [];
                 foreach ($consumes as $mediaName) {
                     $content[$mediaName] = new MediaType($schema);
                 }
                 $body = new RequestBody(
-                    description: $this->optionalString($parameter, 'description') ?? '',
+                    description: Value::optionalString($parameter, 'description') ?? '',
                     required: (bool) ($parameter['required'] ?? false),
                     content: $content,
-                    extensions: $this->extensions($parameter),
+                    extensions: Value::extensions($parameter),
                 );
             } elseif ($in === 'formData') {
                 $form[] = $parameter;
@@ -140,12 +141,12 @@ final class OpenAPI2 extends AbstractReader
         }
 
         $responses = [];
-        foreach ($this->object($data['responses'] ?? null, "{$location}/responses") as $status => $rawResponse) {
+        foreach (Value::object($data['responses'] ?? null, "{$location}/responses") as $status => $rawResponse) {
             $value = $this->resolveObject($rawResponse, "{$location}/responses/{$status}");
             $content = [];
             $examplesByMedia = $this->openApi2Examples($value['examples'] ?? [], "{$location}/responses/{$status}/examples");
             $schema = array_key_exists('schema', $value)
-                ? $this->parseSchema($value['schema'], "{$location}/responses/{$status}/schema")
+                ? $this->schemas->read($value['schema'], "{$location}/responses/{$status}/schema")
                 : null;
             foreach (array_values(array_unique([...$produces, ...array_keys($examplesByMedia)])) as $mediaName) {
                 $content[$mediaName] = new MediaType(
@@ -154,27 +155,27 @@ final class OpenAPI2 extends AbstractReader
                 );
             }
             $responses[(string) $status] = new Response(
-                description: $this->requiredString($value, 'description', "{$location}/responses/{$status}"),
+                description: Value::requiredString($value, 'description', "{$location}/responses/{$status}"),
                 headers: $this->parseHeaders($value['headers'] ?? [], "{$location}/responses/{$status}/headers", true),
                 content: $content,
-                extensions: $this->extensions($value),
+                extensions: Value::extensions($value),
             );
         }
 
         return new Operation(
-            id: $this->optionalString($data, 'operationId') ?? '',
+            id: Value::optionalString($data, 'operationId') ?? '',
             method: $method,
             path: $path,
-            tags: isset($data['tags']) ? array_map('strval', $this->list($data['tags'], "{$location}/tags")) : [],
-            summary: $this->optionalString($data, 'summary') ?? '',
-            description: $this->optionalString($data, 'description') ?? '',
+            tags: isset($data['tags']) ? array_map(strval(...), Value::list($data['tags'], "{$location}/tags")) : [],
+            summary: Value::optionalString($data, 'summary') ?? '',
+            description: Value::optionalString($data, 'description') ?? '',
             deprecated: (bool) ($data['deprecated'] ?? false),
             parameters: $parameters,
             requestBody: $body,
             responses: $responses,
             security: array_key_exists('security', $data) ? $this->parseSecurity($data['security'], "{$location}/security") : $rootSecurity,
             externalDocumentation: isset($data['externalDocs']) ? $this->parseExternalDocumentation($data['externalDocs'], "{$location}/externalDocs") : null,
-            extensions: $this->extensions($data),
+            extensions: Value::extensions($data),
         );
     }
 
@@ -182,7 +183,7 @@ final class OpenAPI2 extends AbstractReader
     private function rawParameters(mixed $raw, string $location): array
     {
         $parameters = [];
-        foreach ($this->list($raw, $location) as $index => $item) {
+        foreach (Value::list($raw, $location) as $index => $item) {
             $parameters[] = $this->resolveObject($item, "{$location}/{$index}");
         }
         return $parameters;
@@ -190,7 +191,7 @@ final class OpenAPI2 extends AbstractReader
 
     private function parseParameter(array $data, string $location): Parameter
     {
-        $locationValue = $this->requiredString($data, 'in', $location);
+        $locationValue = Value::requiredString($data, 'in', $location);
         try {
             $parameterLocation = ParameterLocation::from($locationValue);
         } catch (\ValueError) {
@@ -201,13 +202,13 @@ final class OpenAPI2 extends AbstractReader
             throw new InvalidSpecification("Path parameter must be required at {$location}");
         }
         return new Parameter(
-            name: $this->requiredString($data, 'name', $location),
+            name: Value::requiredString($data, 'name', $location),
             location: $parameterLocation,
-            description: $this->optionalString($data, 'description') ?? '',
+            description: Value::optionalString($data, 'description') ?? '',
             required: $required,
             allowEmptyValue: (bool) ($data['allowEmptyValue'] ?? false),
-            schema: $this->parseSchema($this->schemaFieldsFromParameter($data), $location),
-            extensions: $this->extensions($data),
+            schema: $this->schemas->readParameterFields($data, $location),
+            extensions: Value::extensions($data),
         );
     }
 
@@ -217,14 +218,14 @@ final class OpenAPI2 extends AbstractReader
         $required = [];
         $encoding = [];
         foreach ($form as $index => $parameter) {
-            $name = $this->requiredString($parameter, 'name', "{$location}/parameters/{$index}");
-            $properties[$name] = $this->parseSchema($this->schemaFieldsFromParameter($parameter), "{$location}/parameters/{$index}");
+            $name = Value::requiredString($parameter, 'name', "{$location}/parameters/{$index}");
+            $properties[$name] = $this->schemas->readParameterFields($parameter, "{$location}/parameters/{$index}");
             if ((bool) ($parameter['required'] ?? false)) {
                 $required[] = $name;
             }
             $encoding[$name] = new Encoding(
                 contentType: ($parameter['type'] ?? null) === 'file' ? 'application/octet-stream' : null,
-                extensions: $this->extensions($parameter),
+                extensions: Value::extensions($parameter),
             );
         }
         $schema = new ObjectSchema($properties, $required);
@@ -242,7 +243,7 @@ final class OpenAPI2 extends AbstractReader
     private function openApi2Examples(mixed $raw, string $location): array
     {
         $examples = [];
-        foreach ($this->object($raw, $location) as $mediaName => $value) {
+        foreach (Value::object($raw, $location) as $mediaName => $value) {
             $examples[(string) $mediaName] = new \Utopia\OpenAPI\Model\Example(value: $value);
         }
         return $examples;
@@ -275,6 +276,6 @@ final class OpenAPI2 extends AbstractReader
     /** @return list<string> */
     private function mediaNames(mixed $raw, string $location): array
     {
-        return array_map('strval', $this->list($raw, $location));
+        return array_map(strval(...), Value::list($raw, $location));
     }
 }

@@ -1,0 +1,224 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Utopia\OpenAPI\Tests\Schema;
+
+use PHPUnit\Framework\TestCase;
+use Utopia\OpenAPI\Exception\InvalidSpecification;
+use Utopia\OpenAPI\Model\Schema\AnySchema;
+use Utopia\OpenAPI\Model\Schema\ArraySchema;
+use Utopia\OpenAPI\Model\Schema\CompositeSchema;
+use Utopia\OpenAPI\Model\Schema\Composition;
+use Utopia\OpenAPI\Model\Schema\IntegerSchema;
+use Utopia\OpenAPI\Model\Schema\NeverSchema;
+use Utopia\OpenAPI\Model\Schema\ObjectSchema;
+use Utopia\OpenAPI\Model\Schema\ReferenceSchema;
+use Utopia\OpenAPI\Model\Schema\StringSchema;
+use Utopia\OpenAPI\Parser\Schema\Dialect;
+use Utopia\OpenAPI\Parser\Schema\Reader;
+use Utopia\OpenAPI\Version;
+
+final class ReaderTest extends TestCase
+{
+    private function reader(Version $version): Reader
+    {
+        return new Reader(Dialect::for($version));
+    }
+
+    public function testBooleanSchemasAreReadOnlyUnderTheThreeOneDialect(): void
+    {
+        $reader = $this->reader(Version::V3_1);
+
+        self::assertInstanceOf(AnySchema::class, $reader->read(true, '#/x'));
+        self::assertInstanceOf(NeverSchema::class, $reader->read(false, '#/x'));
+
+        $this->expectException(InvalidSpecification::class);
+        $this->reader(Version::V3_0)->read(true, '#/x');
+    }
+
+    public function testTypeArraysAreReadOnlyUnderTheThreeOneDialect(): void
+    {
+        $reader = $this->reader(Version::V3_1);
+
+        $nullable = $reader->read(['type' => ['string', 'null']], '#/x');
+        self::assertInstanceOf(StringSchema::class, $nullable);
+        self::assertTrue($nullable->nullable);
+
+        $union = $reader->read(['type' => ['string', 'integer', 'null']], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $union);
+        self::assertSame(Composition::ANY_OF, $union->composition);
+        self::assertCount(2, $union->schemas);
+        self::assertTrue($union->nullable);
+
+        $this->expectException(InvalidSpecification::class);
+        $this->reader(Version::V3_0)->read(['type' => ['string', 'null']], '#/x');
+    }
+
+    public function testConstBecomesASingleValueEnumOnlyUnderTheThreeOneDialect(): void
+    {
+        self::assertSame(['pets'], $this->reader(Version::V3_1)->read(['type' => 'string', 'const' => 'pets'], '#/x')->enum);
+        self::assertSame([], $this->reader(Version::V3_0)->read(['type' => 'string', 'const' => 'pets'], '#/x')->enum);
+    }
+
+    public function testAnExplicitEnumWinsOverConst(): void
+    {
+        self::assertSame(['a', 'b'], $this->reader(Version::V3_1)->read(['type' => 'string', 'const' => 'c', 'enum' => ['a', 'b']], '#/x')->enum);
+    }
+
+    public function testNullabilityIsReadFromEitherKeyword(): void
+    {
+        self::assertTrue($this->reader(Version::V3_0)->read(['type' => 'string', 'nullable' => true], '#/x')->nullable);
+        self::assertTrue($this->reader(Version::V2)->read(['type' => 'string', 'x-nullable' => true], '#/x')->nullable);
+        self::assertFalse($this->reader(Version::V3_0)->read(['type' => 'string'], '#/x')->nullable);
+    }
+
+    public function testReferencesAreLeftUnexpandedSoRecursiveGraphsTerminate(): void
+    {
+        $schema = $this->reader(Version::V3_1)->read(['$ref' => '#/components/schemas/Pet'], '#/x');
+
+        self::assertInstanceOf(ReferenceSchema::class, $schema);
+        self::assertSame('#/components/schemas/Pet', $schema->reference);
+    }
+
+    public function testCompositionAndNot(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        foreach ([Composition::ONE_OF, Composition::ANY_OF, Composition::ALL_OF] as $composition) {
+            $schema = $reader->read([$composition->value => [['type' => 'string'], ['type' => 'integer']]], '#/x');
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertSame($composition, $schema->composition);
+            self::assertCount(2, $schema->schemas);
+        }
+
+        $negated = $reader->read(['not' => ['type' => 'string']], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $negated);
+        self::assertNull($negated->composition);
+        self::assertInstanceOf(StringSchema::class, $negated->not);
+    }
+
+    public function testDiscriminatorIsReadFromBothTheStringAndObjectForms(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        $fromString = $reader->read(['oneOf' => [], 'discriminator' => 'kind'], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $fromString);
+        self::assertSame('kind', $fromString->discriminator?->propertyName);
+        self::assertSame([], $fromString->discriminator?->mapping);
+
+        $fromObject = $reader->read([
+            'oneOf' => [],
+            'discriminator' => ['propertyName' => 'kind', 'mapping' => ['cat' => '#/components/schemas/Cat']],
+        ], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $fromObject);
+        self::assertSame(['cat' => '#/components/schemas/Cat'], $fromObject->discriminator?->mapping);
+    }
+
+    public function testObjectAndArrayTypesAreImpliedFromTheirKeywords(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        self::assertInstanceOf(ObjectSchema::class, $reader->read(['properties' => ['a' => ['type' => 'string']]], '#/x'));
+        self::assertInstanceOf(ObjectSchema::class, $reader->read(['additionalProperties' => false], '#/x'));
+        self::assertInstanceOf(ArraySchema::class, $reader->read(['items' => ['type' => 'string']], '#/x'));
+        self::assertInstanceOf(AnySchema::class, $reader->read([], '#/x'));
+    }
+
+    public function testArrayWithoutItemsAcceptsAnything(): void
+    {
+        $schema = $this->reader(Version::V3_0)->read(['type' => 'array'], '#/x');
+
+        self::assertInstanceOf(ArraySchema::class, $schema);
+        self::assertInstanceOf(AnySchema::class, $schema->items);
+    }
+
+    public function testAdditionalPropertiesReadsAsBooleanOrSchema(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        $closed = $reader->read(['type' => 'object', 'additionalProperties' => false], '#/x');
+        self::assertInstanceOf(ObjectSchema::class, $closed);
+        self::assertFalse($closed->additionalProperties);
+
+        $typed = $reader->read(['type' => 'object', 'additionalProperties' => ['type' => 'string']], '#/x');
+        self::assertInstanceOf(ObjectSchema::class, $typed);
+        self::assertInstanceOf(StringSchema::class, $typed->additionalProperties);
+    }
+
+    /**
+     * The 'file' type is 2.0-only in the specification but is accepted under every
+     * dialect here. Pinning current behaviour: gating it is a separate change.
+     */
+    public function testFileTypeReadsAsBinaryStringUnderEveryDialect(): void
+    {
+        foreach ([Version::V2, Version::V3_0, Version::V3_1] as $version) {
+            $schema = $this->reader($version)->read(['type' => 'file'], '#/x');
+            self::assertInstanceOf(StringSchema::class, $schema);
+            self::assertSame('binary', $schema->format);
+        }
+    }
+
+    /**
+     * Numeric exclusive bounds are draft-2020 shaped, but are accepted under every
+     * dialect here. Pinning current behaviour: gating it is a separate change.
+     */
+    public function testNumericExclusiveBoundsCollapseIntoBoundPlusFlag(): void
+    {
+        foreach ([Version::V2, Version::V3_0, Version::V3_1] as $version) {
+            $schema = $this->reader($version)->read(['type' => 'integer', 'exclusiveMinimum' => 5], '#/x');
+            self::assertInstanceOf(IntegerSchema::class, $schema);
+            self::assertSame(5, $schema->minimum);
+            self::assertTrue($schema->exclusiveMinimum);
+        }
+
+        $boolean = $this->reader(Version::V3_0)->read(['type' => 'integer', 'minimum' => 5, 'exclusiveMinimum' => true], '#/x');
+        self::assertInstanceOf(IntegerSchema::class, $boolean);
+        self::assertSame(5, $boolean->minimum);
+        self::assertTrue($boolean->exclusiveMinimum);
+    }
+
+    public function testParameterFieldsAreLiftedIntoASchemaAndNonSchemaKeysDropped(): void
+    {
+        $schema = $this->reader(Version::V2)->readParameterFields([
+            'name' => 'limit',
+            'in' => 'query',
+            'required' => true,
+            'type' => 'integer',
+            'minimum' => 1,
+            'x-nullable' => true,
+        ], '#/x');
+
+        self::assertInstanceOf(IntegerSchema::class, $schema);
+        self::assertSame(1, $schema->minimum);
+        self::assertTrue($schema->nullable);
+        self::assertSame(['x-nullable' => true], $schema->extensions, "'x-nullable' is read as nullability and still kept as an extension");
+    }
+
+    public function testExtensionsAreCarriedOntoTheSchema(): void
+    {
+        self::assertSame(
+            ['x-appwrite' => ['method' => 'get']],
+            $this->reader(Version::V3_1)->read(['type' => 'string', 'x-appwrite' => ['method' => 'get']], '#/x')->extensions,
+        );
+    }
+
+    public function testUnsupportedTypeNamesTheLocation(): void
+    {
+        $this->expectException(InvalidSpecification::class);
+        $this->expectExceptionMessage('#/components/schemas/Pet');
+
+        $this->reader(Version::V3_1)->read(['type' => 'widget'], '#/components/schemas/Pet');
+    }
+
+    public function testNestedFailuresNameTheirOwnLocation(): void
+    {
+        $this->expectException(InvalidSpecification::class);
+        $this->expectExceptionMessage('#/x/properties/inner/items');
+
+        $this->reader(Version::V3_0)->read([
+            'type' => 'object',
+            'properties' => ['inner' => ['type' => 'array', 'items' => ['type' => 'widget']]],
+        ], '#/x');
+    }
+}

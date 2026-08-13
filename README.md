@@ -18,7 +18,7 @@ Swagger 1.x is not supported.
 
 ## Requirements
 
-- PHP 8.2 or newer
+- PHP 8.5 or newer
 - `ext-json`
 
 Install the package with Composer:
@@ -288,8 +288,11 @@ Install dependencies and run the checks:
 composer install
 composer test
 composer lint
+composer rector:check
 composer validate --strict
 ```
+
+Run `composer rector` to apply automated refactoring and `composer rector:check` to check for suggested changes without modifying files.
 
 The test suite covers version handling, metadata, operations, parameter inheritance, requests, responses, schemas, recursive references, security semantics, OpenAPI 2.0 normalization, and JSON Pointer escaping.
 
