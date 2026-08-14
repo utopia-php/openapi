@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Utopia\OpenAPI\Model\Schema;
+namespace Utopia\OpenAPI\Model;
 
-final readonly class ReferenceSchema extends Schema
+final readonly class CompositeSchema extends Schema
 {
+    /** @param list<Schema> $schemas */
     public function __construct(
-        public string $reference,
+        public ?Composition $composition,
+        public array $schemas = [],
+        public ?Schema $not = null,
+        public ?Discriminator $discriminator = null,
         ?string $title = null,
         string $description = '',
         bool $nullable = false,

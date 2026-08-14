@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Utopia\OpenAPI\Model\Schema;
+namespace Utopia\OpenAPI\Model;
 
-final readonly class CompositeSchema extends Schema
+final readonly class NumberSchema extends Schema
 {
-    /** @param list<Schema> $schemas */
     public function __construct(
-        public ?Composition $composition,
-        public array $schemas = [],
-        public ?Schema $not = null,
-        public ?Discriminator $discriminator = null,
+        public int|float|null $minimum = null,
+        public int|float|null $maximum = null,
+        public bool $exclusiveMinimum = false,
+        public bool $exclusiveMaximum = false,
+        public int|float|null $multipleOf = null,
         ?string $title = null,
         string $description = '',
         bool $nullable = false,

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Utopia\OpenAPI\Model\Schema;
+namespace Utopia\OpenAPI\Model;
 
 final readonly class Discriminator
 {

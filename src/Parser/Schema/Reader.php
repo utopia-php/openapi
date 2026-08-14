@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace Utopia\OpenAPI\Parser\Schema;
 
 use Utopia\OpenAPI\Exception\InvalidSpecification;
-use Utopia\OpenAPI\Model\Schema\AnySchema;
-use Utopia\OpenAPI\Model\Schema\ArraySchema;
-use Utopia\OpenAPI\Model\Schema\BooleanSchema;
-use Utopia\OpenAPI\Model\Schema\CompositeSchema;
-use Utopia\OpenAPI\Model\Schema\Composition;
-use Utopia\OpenAPI\Model\Schema\Discriminator;
-use Utopia\OpenAPI\Model\Schema\IntegerSchema;
-use Utopia\OpenAPI\Model\Schema\NeverSchema;
-use Utopia\OpenAPI\Model\Schema\NumberSchema;
-use Utopia\OpenAPI\Model\Schema\ObjectSchema;
-use Utopia\OpenAPI\Model\Schema\ReferenceSchema;
-use Utopia\OpenAPI\Model\Schema\Schema;
-use Utopia\OpenAPI\Model\Schema\StringSchema;
+use Utopia\OpenAPI\Model\AnySchema;
+use Utopia\OpenAPI\Model\ArraySchema;
+use Utopia\OpenAPI\Model\BooleanSchema;
+use Utopia\OpenAPI\Model\CompositeSchema;
+use Utopia\OpenAPI\Model\Composition;
+use Utopia\OpenAPI\Model\Discriminator;
+use Utopia\OpenAPI\Model\IntegerSchema;
+use Utopia\OpenAPI\Model\NeverSchema;
+use Utopia\OpenAPI\Model\NumberSchema;
+use Utopia\OpenAPI\Model\ObjectSchema;
+use Utopia\OpenAPI\Model\ReferenceSchema;
+use Utopia\OpenAPI\Model\Schema;
+use Utopia\OpenAPI\Model\StringSchema;
 use Utopia\OpenAPI\Parser\Value;
 
 /**
