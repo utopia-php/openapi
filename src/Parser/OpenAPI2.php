@@ -9,13 +9,13 @@ use Utopia\OpenAPI\Model\Encoding;
 use Utopia\OpenAPI\Model\Example;
 use Utopia\OpenAPI\Model\HttpMethod;
 use Utopia\OpenAPI\Model\MediaType;
+use Utopia\OpenAPI\Model\ObjectSchema;
 use Utopia\OpenAPI\Model\Operation;
 use Utopia\OpenAPI\Model\Parameter;
 use Utopia\OpenAPI\Model\ParameterLocation;
 use Utopia\OpenAPI\Model\PathItem;
 use Utopia\OpenAPI\Model\RequestBody;
 use Utopia\OpenAPI\Model\Response;
-use Utopia\OpenAPI\Model\Schema\ObjectSchema;
 use Utopia\OpenAPI\Model\Server;
 use Utopia\OpenAPI\Specification;
 

@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Utopia\OpenAPI\Model\Schema;
+namespace Utopia\OpenAPI\Model;
 
-final readonly class NumberSchema extends Schema
+final readonly class ArraySchema extends Schema
 {
     public function __construct(
-        public int|float|null $minimum = null,
-        public int|float|null $maximum = null,
-        public bool $exclusiveMinimum = false,
-        public bool $exclusiveMaximum = false,
-        public int|float|null $multipleOf = null,
+        public Schema $items,
+        public ?int $minItems = null,
+        public ?int $maxItems = null,
+        public bool $uniqueItems = false,
         ?string $title = null,
         string $description = '',
         bool $nullable = false,

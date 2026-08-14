@@ -121,7 +121,7 @@ The library models OpenAPI tags as tags. It does not assign SDK service or platf
 
 ### Schemas
 
-Schemas are represented by typed classes under `Utopia\OpenAPI\Model\Schema`:
+Schemas are represented by typed classes under `Utopia\OpenAPI\Model`, with `Schema` as their common base:
 
 - `AnySchema` and `NeverSchema`
 - `StringSchema`
@@ -147,7 +147,7 @@ The model preserves:
 Schema references remain references rather than being recursively expanded:
 
 ```php
-use Utopia\OpenAPI\Model\Schema\ReferenceSchema;
+use Utopia\OpenAPI\Model\ReferenceSchema;
 
 $schema = $specification->schemas['Pet'];
 

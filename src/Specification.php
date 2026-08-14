@@ -8,7 +8,7 @@ use Utopia\OpenAPI\Model\ExternalDocumentation;
 use Utopia\OpenAPI\Model\Info;
 use Utopia\OpenAPI\Model\Operation;
 use Utopia\OpenAPI\Model\PathItem;
-use Utopia\OpenAPI\Model\Schema\Schema;
+use Utopia\OpenAPI\Model\Schema;
 use Utopia\OpenAPI\Model\SecurityRequirement;
 use Utopia\OpenAPI\Model\SecurityScheme;
 use Utopia\OpenAPI\Model\Server;

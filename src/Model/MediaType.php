@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Utopia\OpenAPI\Model;
 
-use Utopia\OpenAPI\Model\Schema\Schema;
-
 final readonly class MediaType
 {
     /**
