@@ -263,6 +263,10 @@ final readonly class Reader
             $mapping[(string) $name] = $reference;
         }
 
-        return new Discriminator(Value::requiredString($value, 'propertyName', 'schema/discriminator'), $mapping);
+        return new Discriminator(
+            Value::requiredString($value, 'propertyName', 'schema/discriminator'),
+            $mapping,
+            Value::extensions($value),
+        );
     }
 }

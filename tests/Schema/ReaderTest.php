@@ -115,6 +115,52 @@ final class ReaderTest extends TestCase
         self::assertSame(['cat' => '#/components/schemas/Cat'], $fromObject->discriminator?->mapping);
     }
 
+    public function test_discriminator_captures_extensions(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        $schema = $reader->read([
+            'oneOf' => [],
+            'discriminator' => [
+                'propertyName' => 'type',
+                'mapping' => ['string' => '#/components/schemas/Text'],
+                'x-mapping' => [
+                    '#/components/schemas/Email' => ['type' => 'string', 'format' => 'email'],
+                    '#/components/schemas/Text' => ['type' => 'string'],
+                ],
+                'x-propertyNames' => ['type', 'format'],
+            ],
+        ], '#/x');
+
+        self::assertInstanceOf(CompositeSchema::class, $schema);
+        self::assertSame([
+            'x-mapping' => [
+                '#/components/schemas/Email' => ['type' => 'string', 'format' => 'email'],
+                '#/components/schemas/Text' => ['type' => 'string'],
+            ],
+            'x-propertyNames' => ['type', 'format'],
+        ], $schema->discriminator?->extensions);
+
+        self::assertSame('type', $schema->discriminator?->propertyName);
+        self::assertSame(['string' => '#/components/schemas/Text'], $schema->discriminator?->mapping);
+    }
+
+    public function test_discriminator_extensions_default_to_empty(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+
+        $fromString = $reader->read(['oneOf' => [], 'discriminator' => 'kind'], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $fromString);
+        self::assertSame([], $fromString->discriminator?->extensions);
+
+        $fromObject = $reader->read([
+            'oneOf' => [],
+            'discriminator' => ['propertyName' => 'kind'],
+        ], '#/x');
+        self::assertInstanceOf(CompositeSchema::class, $fromObject);
+        self::assertSame([], $fromObject->discriminator?->extensions);
+    }
+
     public function test_object_and_array_types_are_implied_from_their_keywords(): void
     {
         $reader = $this->reader(Version::V3_0);
