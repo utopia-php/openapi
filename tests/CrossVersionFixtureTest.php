@@ -105,7 +105,7 @@ final class CrossVersionFixtureTest extends TestCase
         self::assertSame('int64', $pet->properties['id']->format);
         self::assertInstanceOf(StringSchema::class, $pet->properties['name']);
         self::assertSame(1, $pet->properties['name']->minLength);
-        self::assertTrue($pet->properties['nickname']->nullable);
+        self::assertFalse($pet->properties['nickname']->nullable);
         self::assertInstanceOf(ReferenceSchema::class, $pet->properties['parent']);
         self::assertSame($this->petReference($version), $pet->properties['parent']->reference);
         self::assertSame(['available', 'adopted'], $pet->properties['status']->enum);

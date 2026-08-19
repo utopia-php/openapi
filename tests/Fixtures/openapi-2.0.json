@@ -132,8 +132,7 @@
           "minLength": 1
         },
         "nickname": {
-          "type": "string",
-          "x-nullable": true
+          "type": "string"
         },
         "parent": {
           "$ref": "#/definitions/Pet"

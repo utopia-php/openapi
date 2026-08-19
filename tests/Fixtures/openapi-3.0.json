@@ -148,8 +148,7 @@
             "minLength": 1
           },
           "nickname": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "parent": {
             "$ref": "#/components/schemas/Pet"
