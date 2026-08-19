@@ -32,7 +32,7 @@ final readonly class Reader
     private const array PARAMETER_FIELDS = [
         'type', 'format', 'items', 'default', 'enum', 'maximum', 'exclusiveMaximum',
         'minimum', 'exclusiveMinimum', 'maxLength', 'minLength', 'pattern',
-        'maxItems', 'minItems', 'uniqueItems', 'multipleOf', 'description', 'x-nullable',
+        'maxItems', 'minItems', 'uniqueItems', 'multipleOf', 'description',
     ];
 
     public function __construct(private Dialect $dialect) {}
@@ -161,7 +161,7 @@ final readonly class Reader
         return [
             'title' => Value::optionalString($data, 'title'),
             'description' => Value::optionalString($data, 'description') ?? '',
-            'nullable' => (bool) ($data['nullable'] ?? $data['x-nullable'] ?? false),
+            'nullable' => (bool) ($data['nullable'] ?? false),
             'default' => $data['default'] ?? null,
             'enum' => $enum,
             'format' => Value::optionalString($data, 'format'),

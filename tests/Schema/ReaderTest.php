@@ -66,11 +66,18 @@ final class ReaderTest extends TestCase
         self::assertSame(['a', 'b'], $this->reader(Version::V3_1)->read(['type' => 'string', 'const' => 'c', 'enum' => ['a', 'b']], '#/x')->enum);
     }
 
-    public function test_nullability_is_read_from_either_keyword(): void
+    public function test_nullability_is_read_from_the_nullable_keyword(): void
     {
         self::assertTrue($this->reader(Version::V3_0)->read(['type' => 'string', 'nullable' => true], '#/x')->nullable);
-        self::assertTrue($this->reader(Version::V2)->read(['type' => 'string', 'x-nullable' => true], '#/x')->nullable);
         self::assertFalse($this->reader(Version::V3_0)->read(['type' => 'string'], '#/x')->nullable);
+    }
+
+    public function test_x_nullable_remains_an_uninterpreted_extension(): void
+    {
+        $schema = $this->reader(Version::V2)->read(['type' => 'string', 'x-nullable' => true], '#/x');
+
+        self::assertFalse($schema->nullable);
+        self::assertSame(['x-nullable' => true], $schema->extensions);
     }
 
     public function test_references_are_left_unexpanded_so_recursive_graphs_terminate(): void
@@ -245,8 +252,8 @@ final class ReaderTest extends TestCase
 
         self::assertInstanceOf(IntegerSchema::class, $schema);
         self::assertSame(1, $schema->minimum);
-        self::assertTrue($schema->nullable);
-        self::assertSame(['x-nullable' => true], $schema->extensions, "'x-nullable' is read as nullability and still kept as an extension");
+        self::assertFalse($schema->nullable);
+        self::assertSame([], $schema->extensions);
     }
 
     public function test_extensions_are_carried_onto_the_schema(): void
