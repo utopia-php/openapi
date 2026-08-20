@@ -105,6 +105,66 @@ final class ReaderTest extends TestCase
         self::assertInstanceOf(StringSchema::class, $negated->not);
     }
 
+    public function test_open_string_enum_branch_is_exposed_regardless_of_branch_order(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+        $enum = ['type' => 'string', 'enum' => ['network.requests', 'network.inbound']];
+        $open = ['type' => 'string'];
+
+        foreach ([[$enum, $open], [$open, $enum]] as $branches) {
+            $schema = $reader->read(['anyOf' => $branches], '#/x');
+
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertSame(['network.requests', 'network.inbound'], $schema->openStringEnumBranch()?->enum);
+        }
+    }
+
+    public function test_open_string_enum_requires_any_of(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+        $branches = [
+            ['type' => 'string', 'enum' => ['known']],
+            ['type' => 'string'],
+        ];
+
+        foreach ([Composition::ONE_OF, Composition::ALL_OF] as $composition) {
+            $schema = $reader->read([$composition->value => $branches], '#/x');
+
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertNull($schema->openStringEnumBranch());
+        }
+    }
+
+    public function test_open_string_enum_requires_one_enum_and_an_open_string_branch(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+        $invalidUnions = [
+            [['type' => 'string', 'enum' => ['known']]],
+            [['type' => 'string'], ['type' => 'string']],
+            [
+                ['type' => 'string', 'enum' => ['first']],
+                ['type' => 'string', 'enum' => ['second']],
+                ['type' => 'string'],
+            ],
+            [
+                ['type' => 'integer', 'enum' => [1]],
+                ['type' => 'string'],
+            ],
+            [
+                ['type' => 'string', 'enum' => ['known']],
+                ['type' => 'string'],
+                ['type' => 'integer'],
+            ],
+        ];
+
+        foreach ($invalidUnions as $branches) {
+            $schema = $reader->read(['anyOf' => $branches], '#/x');
+
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertNull($schema->openStringEnumBranch());
+        }
+    }
+
     public function test_discriminator_is_read_from_both_the_string_and_object_forms(): void
     {
         $reader = $this->reader(Version::V3_0);

@@ -158,6 +158,21 @@ if ($schema instanceof ReferenceSchema) {
 
 This makes valid recursive schemas safe to parse.
 
+An `anyOf` that combines one string enum with another string branch documents
+suggested values without closing the set. The canonical composite exposes the
+enum-bearing branch without requiring consumers to inspect the union shape:
+
+```php
+use Utopia\OpenAPI\Model\CompositeSchema;
+
+if ($schema instanceof CompositeSchema) {
+    $suggestedValues = $schema->openStringEnumBranch()?->enum ?? [];
+}
+```
+
+`oneOf`, unions with non-string branches, and unions with multiple enum branches
+are not treated as open string enums.
+
 ### Parameters and request bodies
 
 Path-level parameters are inherited by operations. An operation-level parameter with the same case-sensitive `name` and `in` value replaces the inherited parameter.
