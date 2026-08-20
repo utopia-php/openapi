@@ -52,6 +52,15 @@ final class ValueTest extends TestCase
         }
     }
 
+    public function test_string_list_rejects_non_string_items(): void
+    {
+        self::assertSame(['first', 'second'], Value::stringList(['first', 'second'], '#/x-enum-keys'));
+
+        $this->expectException(InvalidSpecification::class);
+        $this->expectExceptionMessage('Expected string at #/x-enum-keys/1');
+        Value::stringList(['first', 2], '#/x-enum-keys');
+    }
+
     public function test_required_string_names_the_missing_key(): void
     {
         self::assertSame('Pets', Value::requiredString(['title' => 'Pets'], 'title', '#/info'));

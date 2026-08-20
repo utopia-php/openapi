@@ -35,6 +35,19 @@ final class Value
         return $value;
     }
 
+    /** @return list<string> */
+    public static function stringList(mixed $value, string $location): array
+    {
+        $values = self::list($value, $location);
+        foreach ($values as $index => $item) {
+            if (! is_string($item)) {
+                throw new InvalidSpecification("Expected string at {$location}/{$index}");
+            }
+        }
+
+        return $values;
+    }
+
     /** @param array<string, mixed> $data */
     public static function requiredString(array $data, string $key, string $location): string
     {
