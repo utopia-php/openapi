@@ -33,6 +33,7 @@ final readonly class Reader
         'type', 'format', 'items', 'default', 'enum', 'maximum', 'exclusiveMaximum',
         'minimum', 'exclusiveMinimum', 'maxLength', 'minLength', 'pattern',
         'maxItems', 'minItems', 'uniqueItems', 'multipleOf', 'description',
+        'x-enum-name', 'x-enum-keys',
     ];
 
     public function __construct(private Dialect $dialect) {}
@@ -117,7 +118,7 @@ final readonly class Reader
                 writeOnly: $common['writeOnly'], deprecated: $common['deprecated'], example: $common['example'],
                 extensions: $common['extensions'],
                 enumName: Value::optionalString($data, 'x-enum-name'),
-                enumKeys: isset($data['x-enum-keys']) ? Value::stringList($data['x-enum-keys'], "{$location}/x-enum-keys") : [],
+                enumKeys: $this->enumKeys($data, $location, $common['enum']),
             ),
             'integer' => $this->integer($data, $location, $common),
             'number' => $this->number($data, $location, $common),
@@ -147,6 +148,25 @@ final readonly class Reader
     public function readParameterFields(array $data, string $location): Schema
     {
         return $this->read(array_intersect_key($data, array_flip(self::PARAMETER_FIELDS)), $location);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<mixed>  $enum
+     * @return list<string>
+     */
+    private function enumKeys(array $data, string $location, array $enum): array
+    {
+        if (! isset($data['x-enum-keys'])) {
+            return [];
+        }
+
+        $keys = Value::stringList($data['x-enum-keys'], "{$location}/x-enum-keys");
+        if (count($keys) !== count($enum)) {
+            throw new InvalidSpecification("Expected x-enum-keys to match enum length at {$location}");
+        }
+
+        return $keys;
     }
 
     /**

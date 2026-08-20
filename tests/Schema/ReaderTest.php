@@ -129,6 +129,32 @@ final class ReaderTest extends TestCase
         }
     }
 
+    public function test_enum_metadata_is_preserved_for_openapi_two_inline_parameters(): void
+    {
+        $schema = $this->reader(Version::V2)->readParameterFields([
+            'type' => 'string',
+            'enum' => ['network.requests'],
+            'x-enum-name' => 'UsageEventMetric',
+            'x-enum-keys' => ['NetworkRequests'],
+        ], '#/parameters/metric');
+
+        self::assertInstanceOf(StringSchema::class, $schema);
+        self::assertSame('UsageEventMetric', $schema->enumName);
+        self::assertSame(['NetworkRequests'], $schema->enumKeys);
+    }
+
+    public function test_enum_keys_must_match_enum_length(): void
+    {
+        $this->expectException(InvalidSpecification::class);
+        $this->expectExceptionMessage('Expected x-enum-keys to match enum length at #/x');
+
+        $this->reader(Version::V3_0)->read([
+            'type' => 'string',
+            'enum' => ['first', 'second'],
+            'x-enum-keys' => ['First'],
+        ], '#/x');
+    }
+
     public function test_open_string_enum_requires_any_of(): void
     {
         $reader = $this->reader(Version::V3_0);
@@ -169,6 +195,32 @@ final class ReaderTest extends TestCase
 
         foreach ($invalidUnions as $branches) {
             $schema = $reader->read(['anyOf' => $branches], '#/x');
+
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertNull($schema->openStringEnumBranch());
+        }
+    }
+
+    public function test_open_string_enum_requires_an_unrestricted_string_branch(): void
+    {
+        $reader = $this->reader(Version::V3_0);
+        $enum = ['type' => 'string', 'enum' => ['known']];
+        $constraints = [
+            ['minLength' => 1],
+            ['maxLength' => 10],
+            ['pattern' => '^known$'],
+            ['format' => 'uuid'],
+        ];
+
+        foreach ($constraints as $constraint) {
+            $schema = $reader->read(['anyOf' => [$enum, ['type' => 'string', ...$constraint]]], '#/x');
+
+            self::assertInstanceOf(CompositeSchema::class, $schema);
+            self::assertNull($schema->openStringEnumBranch());
+        }
+
+        foreach ([['enum' => ['known']], ['not' => ['type' => 'string', 'enum' => ['blocked']]]] as $constraint) {
+            $schema = $reader->read(['anyOf' => [$enum, ['type' => 'string']], ...$constraint], '#/x');
 
             self::assertInstanceOf(CompositeSchema::class, $schema);
             self::assertNull($schema->openStringEnumBranch());
