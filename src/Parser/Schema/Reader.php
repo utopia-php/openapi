@@ -162,7 +162,7 @@ final readonly class Reader
         }
 
         $keys = Value::stringList($data['x-enum-keys'], "{$location}/x-enum-keys");
-        if (count($keys) !== count($enum)) {
+        if ($keys !== [] && count($keys) !== count($enum)) {
             throw new InvalidSpecification("Expected x-enum-keys to match enum length at {$location}");
         }
 

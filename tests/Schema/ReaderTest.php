@@ -143,6 +143,18 @@ final class ReaderTest extends TestCase
         self::assertSame(['NetworkRequests'], $schema->enumKeys);
     }
 
+    public function test_empty_enum_keys_use_derived_names(): void
+    {
+        $schema = $this->reader(Version::V3_0)->read([
+            'type' => 'string',
+            'enum' => ['first', 'second'],
+            'x-enum-keys' => [],
+        ], '#/x');
+
+        self::assertInstanceOf(StringSchema::class, $schema);
+        self::assertSame([], $schema->enumKeys);
+    }
+
     public function test_enum_keys_must_match_enum_length(): void
     {
         $this->expectException(InvalidSpecification::class);
