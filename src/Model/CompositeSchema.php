@@ -6,10 +6,13 @@ namespace Utopia\OpenAPI\Model;
 
 final readonly class CompositeSchema extends Schema
 {
+    /** @var list<Schema> */
+    public array $schemas;
+
     /** @param list<Schema> $schemas */
     public function __construct(
         public ?Composition $composition,
-        public array $schemas = [],
+        array $schemas = [],
         public ?Schema $not = null,
         public ?Discriminator $discriminator = null,
         ?string $title = null,
@@ -24,6 +27,32 @@ final readonly class CompositeSchema extends Schema
         mixed $example = null,
         array $extensions = [],
     ) {
+        $openEnumIndex = self::openStringEnumBranchIndex($composition, $schemas);
+        if ($openEnumIndex !== null) {
+            /** @var StringSchema $enumBranch */
+            $enumBranch = $schemas[$openEnumIndex];
+            $schemas[$openEnumIndex] = new StringSchema(
+                minLength: $enumBranch->minLength,
+                maxLength: $enumBranch->maxLength,
+                pattern: $enumBranch->pattern,
+                title: $enumBranch->title,
+                description: $enumBranch->description,
+                nullable: $enumBranch->nullable,
+                default: $enumBranch->default,
+                enum: $enumBranch->enum,
+                format: $enumBranch->format,
+                readOnly: $enumBranch->readOnly,
+                writeOnly: $enumBranch->writeOnly,
+                deprecated: $enumBranch->deprecated,
+                example: $enumBranch->example,
+                extensions: $enumBranch->extensions,
+                enumName: $enumBranch->enumName,
+                enumKeys: $enumBranch->enumKeys,
+                open: true,
+            );
+        }
+        $this->schemas = $schemas;
+
         parent::__construct($title, $description, $nullable, $default, $enum, $format, $readOnly, $writeOnly, $deprecated, $example, $extensions);
     }
 
@@ -35,14 +64,22 @@ final readonly class CompositeSchema extends Schema
      */
     public function openStringEnumBranch(): ?StringSchema
     {
-        if ($this->composition !== Composition::ANY_OF) {
+        $index = self::openStringEnumBranchIndex($this->composition, $this->schemas);
+
+        return $index === null ? null : $this->schemas[$index];
+    }
+
+    /** @param list<Schema> $schemas */
+    private static function openStringEnumBranchIndex(?Composition $composition, array $schemas): ?int
+    {
+        if ($composition !== Composition::ANY_OF) {
             return null;
         }
 
-        $enumBranch = null;
+        $enumBranchIndex = null;
         $hasOpenBranch = false;
 
-        foreach ($this->schemas as $schema) {
+        foreach ($schemas as $index => $schema) {
             if (! $schema instanceof StringSchema) {
                 return null;
             }
@@ -53,13 +90,13 @@ final readonly class CompositeSchema extends Schema
                 continue;
             }
 
-            if ($enumBranch !== null) {
+            if ($enumBranchIndex !== null) {
                 return null;
             }
 
-            $enumBranch = $schema;
+            $enumBranchIndex = $index;
         }
 
-        return $hasOpenBranch ? $enumBranch : null;
+        return $hasOpenBranch ? $enumBranchIndex : null;
     }
 }

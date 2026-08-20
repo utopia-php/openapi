@@ -6,6 +6,7 @@ namespace Utopia\OpenAPI\Model;
 
 final readonly class StringSchema extends Schema
 {
+    /** @param list<string> $enumKeys */
     public function __construct(
         public ?int $minLength = null,
         public ?int $maxLength = null,
@@ -21,6 +22,9 @@ final readonly class StringSchema extends Schema
         bool $deprecated = false,
         mixed $example = null,
         array $extensions = [],
+        public ?string $enumName = null,
+        public array $enumKeys = [],
+        public bool $open = false,
     ) {
         parent::__construct($title, $description, $nullable, $default, $enum, $format, $readOnly, $writeOnly, $deprecated, $example, $extensions);
     }

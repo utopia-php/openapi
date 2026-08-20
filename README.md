@@ -166,7 +166,8 @@ enum-bearing branch without requiring consumers to inspect the union shape:
 use Utopia\OpenAPI\Model\CompositeSchema;
 
 if ($schema instanceof CompositeSchema) {
-    $suggestedValues = $schema->openStringEnumBranch()?->enum ?? [];
+    $enumBranch = $schema->openStringEnumBranch();
+    $suggestedValues = $enumBranch?->enum ?? [];
 }
 ```
 
