@@ -108,14 +108,24 @@ final class ReaderTest extends TestCase
     public function test_open_string_enum_branch_is_exposed_regardless_of_branch_order(): void
     {
         $reader = $this->reader(Version::V3_0);
-        $enum = ['type' => 'string', 'enum' => ['network.requests', 'network.inbound']];
+        $enum = [
+            'type' => 'string',
+            'enum' => ['network.requests', 'network.inbound'],
+            'x-enum-name' => 'UsageEventMetric',
+            'x-enum-keys' => ['NetworkRequests', 'NetworkInbound'],
+        ];
         $open = ['type' => 'string'];
 
         foreach ([[$enum, $open], [$open, $enum]] as $branches) {
             $schema = $reader->read(['anyOf' => $branches], '#/x');
 
             self::assertInstanceOf(CompositeSchema::class, $schema);
-            self::assertSame(['network.requests', 'network.inbound'], $schema->openStringEnumBranch()?->enum);
+            $enumBranch = $schema->openStringEnumBranch();
+            self::assertSame(['network.requests', 'network.inbound'], $enumBranch?->enum);
+            self::assertSame('UsageEventMetric', $enumBranch?->enumName);
+            self::assertSame(['NetworkRequests', 'NetworkInbound'], $enumBranch?->enumKeys);
+            self::assertTrue($enumBranch?->open);
+            self::assertFalse($schema->schemas[$enumBranch === $schema->schemas[0] ? 1 : 0]->open);
         }
     }
 

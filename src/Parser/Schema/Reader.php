@@ -116,6 +116,8 @@ final readonly class Reader
                 default: $common['default'], enum: $common['enum'], readOnly: $common['readOnly'],
                 writeOnly: $common['writeOnly'], deprecated: $common['deprecated'], example: $common['example'],
                 extensions: $common['extensions'],
+                enumName: Value::optionalString($data, 'x-enum-name'),
+                enumKeys: isset($data['x-enum-keys']) ? Value::list($data['x-enum-keys'], "{$location}/x-enum-keys") : [],
             ),
             'integer' => $this->integer($data, $location, $common),
             'number' => $this->number($data, $location, $common),
