@@ -27,7 +27,7 @@ final readonly class CompositeSchema extends Schema
         mixed $example = null,
         array $extensions = [],
     ) {
-        $openEnumIndex = self::openStringEnumBranchIndex($composition, $schemas);
+        $openEnumIndex = self::openStringEnumBranchIndex($composition, $schemas, $not, $enum);
         if ($openEnumIndex !== null) {
             /** @var StringSchema $enumBranch */
             $enumBranch = $schemas[$openEnumIndex];
@@ -64,15 +64,18 @@ final readonly class CompositeSchema extends Schema
      */
     public function openStringEnumBranch(): ?StringSchema
     {
-        $index = self::openStringEnumBranchIndex($this->composition, $this->schemas);
+        $index = self::openStringEnumBranchIndex($this->composition, $this->schemas, $this->not, $this->enum);
 
         return $index === null ? null : $this->schemas[$index];
     }
 
-    /** @param list<Schema> $schemas */
-    private static function openStringEnumBranchIndex(?Composition $composition, array $schemas): ?int
+    /**
+     * @param  list<Schema>  $schemas
+     * @param  list<mixed>  $enum
+     */
+    private static function openStringEnumBranchIndex(?Composition $composition, array $schemas, ?Schema $not, array $enum): ?int
     {
-        if ($composition !== Composition::ANY_OF) {
+        if ($composition !== Composition::ANY_OF || $not !== null || $enum !== []) {
             return null;
         }
 
@@ -85,6 +88,14 @@ final readonly class CompositeSchema extends Schema
             }
 
             if ($schema->enum === []) {
+                if (
+                    $schema->minLength !== null
+                    || $schema->maxLength !== null
+                    || $schema->pattern !== null
+                    || $schema->format !== null
+                ) {
+                    return null;
+                }
                 $hasOpenBranch = true;
 
                 continue;
