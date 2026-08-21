@@ -315,7 +315,7 @@ The core parser supports JSON strings and decoded PHP arrays. The following capa
 - Complete OpenAPI conformance validation
 - Serialization or textual round trips
 - Callbacks, links, and OpenAPI 3.1 webhooks
-- Interpretation of vendor extensions (`x-enum-name` and `x-enum-keys` are retained as opaque extensions)
+- Interpretation of vendor extensions
 - Swagger 1.x
 
 A missing `operationId` is currently accepted and represented as an empty string.

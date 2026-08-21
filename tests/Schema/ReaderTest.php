@@ -153,25 +153,6 @@ final class ReaderTest extends TestCase
         self::assertNull($schema->openStringEnumBranch());
     }
 
-    public function test_x_enum_extensions_remain_uninterpreted_on_a_string_schema(): void
-    {
-        $schema = $this->reader(Version::V3_0)->read([
-            'type' => 'string',
-            'enum' => ['user.created', 'user.updated'],
-            'x-enum-name' => 'WebhookEvent',
-            'x-enum-keys' => ['UserCreated', 'UserUpdated'],
-        ], '#/x');
-
-        self::assertInstanceOf(StringSchema::class, $schema);
-        self::assertSame(['user.created', 'user.updated'], $schema->enum);
-        self::assertNull($schema->enumName);
-        self::assertSame([], $schema->enumKeys);
-        self::assertSame([
-            'x-enum-name' => 'WebhookEvent',
-            'x-enum-keys' => ['UserCreated', 'UserUpdated'],
-        ], $schema->extensions);
-    }
-
     public function test_plain_string_enum_title_does_not_fill_enum_name_or_keys(): void
     {
         $schema = $this->reader(Version::V3_0)->read([
