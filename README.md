@@ -158,21 +158,45 @@ if ($schema instanceof ReferenceSchema) {
 
 This makes valid recursive schemas safe to parse.
 
-An `anyOf` that combines one string enum with another string branch documents
-suggested values without closing the set. The canonical composite exposes the
-enum-bearing branch without requiring consumers to inspect the union shape:
+OpenAPI 3.1 annotated enumerations (`oneOf` or `anyOf` of `const` + `title`)
+are mapped onto `StringSchema` fields. The type name is the composite `title`.
+Value names are each branch’s `title`.
+
+```yaml
+title: WebhookEvent
+oneOf:
+  - const: user.created
+    title: UserCreated
+  - const: user.updated
+    title: UserUpdated
+```
 
 ```php
 use Utopia\OpenAPI\Model\CompositeSchema;
+use Utopia\OpenAPI\Model\StringSchema;
 
 if ($schema instanceof CompositeSchema) {
-    $enumBranch = $schema->openStringEnumBranch();
-    $suggestedValues = $enumBranch?->enum ?? [];
+    $enum = $schema->stringEnum();
+    $values = $enum?->enum ?? [];
+    $keys = $enum?->enumKeys ?? [];
+    $name = $enum?->enumName;
 }
 ```
 
-`oneOf`, unions with non-string branches, and unions with multiple enum branches
-are not treated as open string enums.
+The composite tree is preserved. `stringEnum()` returns a synthesized
+`StringSchema` (`enum`, `enumName`, `enumKeys`, `open`) so consumers do not
+walk the union.
+
+An `anyOf` that adds an unconstrained `type: string` branch documents
+suggested values without closing the set (`open: true`). That includes a
+legacy multi-value string enum next to `type: string`, a flattened list of
+consts plus `type: string`, and a nested annotated `oneOf` plus `type: string`.
+`openStringEnumBranch()` returns the same `StringSchema` only when `open` is
+true.
+
+`allOf`, unions with `$ref` members, and unions with multiple multi-value
+enum branches are not treated as string enums. Mixed const and object, numeric
+const, or multi-value enum branches throw `InvalidSpecification`.
 
 ### Parameters and request bodies
 
