@@ -28,4 +28,6 @@ Terms used across this library. Use these words in code, tests, and commits.
 
 **Annotations** — the fields every schema kind shares: title, description, nullable, default, enum, format, readOnly, writeOnly, deprecated, example, extensions.
 
-**Extension** — any `x-`-prefixed key. Captured on every model that can carry one; never interpreted.
+**Annotated enumeration** — an OAS 3.1 `oneOf` or `anyOf` whose members are string `const` (or one-element `enum`) schemas, optionally with `title`/`description`. Mapped onto `StringSchema` (`enum`, `enumName` from the composite title, `enumKeys` from branch titles, `open` when composed with an unconstrained string). Exposed on `CompositeSchema` as `stringEnum()` without collapsing the union tree.
+
+**Extension** — any `x-`-prefixed key. Captured on every model that can carry one; never interpreted. Enum type and value names come from `title`, not from `x-enum-name` / `x-enum-keys`.

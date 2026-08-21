@@ -54,11 +54,11 @@ final class ValueTest extends TestCase
 
     public function test_string_list_rejects_non_string_items(): void
     {
-        self::assertSame(['first', 'second'], Value::stringList(['first', 'second'], '#/x-enum-keys'));
+        self::assertSame(['first', 'second'], Value::stringList(['first', 'second'], '#/tags'));
 
         $this->expectException(InvalidSpecification::class);
-        $this->expectExceptionMessage('Expected string at #/x-enum-keys/1');
-        Value::stringList(['first', 2], '#/x-enum-keys');
+        $this->expectExceptionMessage('Expected string at #/tags/1');
+        Value::stringList(['first', 2], '#/tags');
     }
 
     public function test_required_string_names_the_missing_key(): void

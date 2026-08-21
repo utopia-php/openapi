@@ -33,7 +33,6 @@ final readonly class Reader
         'type', 'format', 'items', 'default', 'enum', 'maximum', 'exclusiveMaximum',
         'minimum', 'exclusiveMinimum', 'maxLength', 'minLength', 'pattern',
         'maxItems', 'minItems', 'uniqueItems', 'multipleOf', 'description',
-        'x-enum-name', 'x-enum-keys',
     ];
 
     public function __construct(private Dialect $dialect) {}
@@ -76,7 +75,7 @@ final readonly class Reader
                     $schemas[] = $this->read(['type' => $memberType], "{$location}/type/{$index}");
                 }
 
-                return new CompositeSchema(Composition::ANY_OF, $schemas, null, $this->discriminator($data), ...$common);
+                return new CompositeSchema(Composition::ANY_OF, $schemas, null, $this->discriminator($data), ...$common, location: $location);
             }
             $type = $types[0] ?? null;
         }
@@ -92,11 +91,11 @@ final readonly class Reader
                 }
                 $not = array_key_exists('not', $data) ? $this->read($data['not'], "{$location}/not") : null;
 
-                return new CompositeSchema($composition, $schemas, $not, $this->discriminator($data), ...$common);
+                return new CompositeSchema($composition, $schemas, $not, $this->discriminator($data), ...$common, location: $location);
             }
         }
         if (array_key_exists('not', $data)) {
-            return new CompositeSchema(null, [], $this->read($data['not'], "{$location}/not"), $this->discriminator($data), ...$common);
+            return new CompositeSchema(null, [], $this->read($data['not'], "{$location}/not"), $this->discriminator($data), ...$common, location: $location);
         }
 
         if ($type === null) {
@@ -117,8 +116,6 @@ final readonly class Reader
                 default: $common['default'], enum: $common['enum'], readOnly: $common['readOnly'],
                 writeOnly: $common['writeOnly'], deprecated: $common['deprecated'], example: $common['example'],
                 extensions: $common['extensions'],
-                enumName: Value::optionalString($data, 'x-enum-name'),
-                enumKeys: $this->enumKeys($data, $location, $common['enum']),
             ),
             'integer' => $this->integer($data, $location, $common),
             'number' => $this->number($data, $location, $common),
@@ -148,25 +145,6 @@ final readonly class Reader
     public function readParameterFields(array $data, string $location): Schema
     {
         return $this->read(array_intersect_key($data, array_flip(self::PARAMETER_FIELDS)), $location);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @param  list<mixed>  $enum
-     * @return list<string>
-     */
-    private function enumKeys(array $data, string $location, array $enum): array
-    {
-        if (! isset($data['x-enum-keys'])) {
-            return [];
-        }
-
-        $keys = Value::stringList($data['x-enum-keys'], "{$location}/x-enum-keys");
-        if ($keys !== [] && count($keys) !== count($enum)) {
-            throw new InvalidSpecification("Expected x-enum-keys to match enum length at {$location}");
-        }
-
-        return $keys;
     }
 
     /**

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Utopia\OpenAPI\Model;
 
+use Utopia\OpenAPI\Exception\InvalidSpecification;
+
 final readonly class CompositeSchema extends Schema
 {
     /** @var list<Schema> */
     public array $schemas;
+
+    private ?StringSchema $stringEnum;
 
     /** @param list<Schema> $schemas */
     public function __construct(
@@ -26,8 +30,9 @@ final readonly class CompositeSchema extends Schema
         bool $deprecated = false,
         mixed $example = null,
         array $extensions = [],
+        string $location = '#',
     ) {
-        $openEnumIndex = self::openStringEnumBranchIndex($composition, $schemas, $not, $enum);
+        $openEnumIndex = self::legacyOpenStringEnumBranchIndex($composition, $schemas, $not, $enum, $discriminator);
         if ($openEnumIndex !== null) {
             /** @var StringSchema $enumBranch */
             $enumBranch = $schemas[$openEnumIndex];
@@ -46,7 +51,7 @@ final readonly class CompositeSchema extends Schema
                 deprecated: $enumBranch->deprecated,
                 example: $enumBranch->example,
                 extensions: $enumBranch->extensions,
-                enumName: $enumBranch->enumName,
+                enumName: $enumBranch->enumName ?? $title,
                 enumKeys: $enumBranch->enumKeys,
                 open: true,
             );
@@ -54,28 +59,52 @@ final readonly class CompositeSchema extends Schema
         $this->schemas = $schemas;
 
         parent::__construct($title, $description, $nullable, $default, $enum, $format, $readOnly, $writeOnly, $deprecated, $example, $extensions);
+
+        $this->stringEnum = self::detectStringEnum(
+            $composition,
+            $this->schemas,
+            $not,
+            $enum,
+            $discriminator,
+            $title,
+            $description,
+            $nullable,
+            $default,
+            $extensions,
+            $location,
+        );
+    }
+
+    /**
+     * Return the documented string enum, whether closed, open, or annotated.
+     *
+     * Closed annotated oneOf/anyOf of string consts synthesize a StringSchema
+     * with open: false. Open unions (legacy multi-value enum or annotated consts
+     * plus an unconstrained string) return a StringSchema with open: true.
+     */
+    public function stringEnum(): ?StringSchema
+    {
+        return $this->stringEnum;
     }
 
     /**
      * Return the documented values from an open string enum.
      *
-     * An open string enum uses anyOf to combine one string enum with one or
-     * more string branches that accept values outside the documented set.
+     * An open string enum uses anyOf to combine documented string values with
+     * one or more string branches that accept values outside that set.
      */
     public function openStringEnumBranch(): ?StringSchema
     {
-        $index = self::openStringEnumBranchIndex($this->composition, $this->schemas, $this->not, $this->enum);
-
-        return $index === null ? null : $this->schemas[$index];
+        return $this->stringEnum?->open === true ? $this->stringEnum : null;
     }
 
     /**
      * @param  list<Schema>  $schemas
      * @param  list<mixed>  $enum
      */
-    private static function openStringEnumBranchIndex(?Composition $composition, array $schemas, ?Schema $not, array $enum): ?int
+    private static function legacyOpenStringEnumBranchIndex(?Composition $composition, array $schemas, ?Schema $not, array $enum, ?Discriminator $discriminator): ?int
     {
-        if ($composition !== Composition::ANY_OF || $not !== null || $enum !== []) {
+        if ($composition !== Composition::ANY_OF || $not !== null || $enum !== [] || $discriminator !== null) {
             return null;
         }
 
@@ -88,12 +117,7 @@ final readonly class CompositeSchema extends Schema
             }
 
             if ($schema->enum === []) {
-                if (
-                    $schema->minLength !== null
-                    || $schema->maxLength !== null
-                    || $schema->pattern !== null
-                    || $schema->format !== null
-                ) {
+                if (! self::isUnconstrainedString($schema)) {
                     return null;
                 }
                 $hasOpenBranch = true;
@@ -101,7 +125,7 @@ final readonly class CompositeSchema extends Schema
                 continue;
             }
 
-            if ($enumBranchIndex !== null) {
+            if ($enumBranchIndex !== null || count($schema->enum) < 2) {
                 return null;
             }
 
@@ -109,5 +133,224 @@ final readonly class CompositeSchema extends Schema
         }
 
         return $hasOpenBranch ? $enumBranchIndex : null;
+    }
+
+    /**
+     * @param  list<Schema>  $schemas
+     * @param  list<mixed>  $enum
+     * @param  array<string, mixed>  $extensions
+     */
+    private static function detectStringEnum(
+        ?Composition $composition,
+        array $schemas,
+        ?Schema $not,
+        array $enum,
+        ?Discriminator $discriminator,
+        ?string $title,
+        string $description,
+        bool $nullable,
+        mixed $default,
+        array $extensions,
+        string $location,
+    ): ?StringSchema {
+        if (
+            ($composition !== Composition::ONE_OF && $composition !== Composition::ANY_OF)
+            || $not !== null
+            || $enum !== []
+            || $discriminator !== null
+            || $schemas === []
+        ) {
+            return null;
+        }
+
+        /** @var list<array{value: string, title: ?string}> $consts */
+        $consts = [];
+        /** @var list<StringSchema> $nested */
+        $nested = [];
+        /** @var list<StringSchema> $multiValue */
+        $multiValue = [];
+        $unconstrained = 0;
+        $hasReference = false;
+        $hasNumericConst = false;
+        $hasNonString = false;
+        $hasConstrainedString = false;
+
+        foreach ($schemas as $schema) {
+            if ($schema instanceof ReferenceSchema) {
+                $hasReference = true;
+
+                continue;
+            }
+
+            if (self::isUnconstrainedString($schema)) {
+                $unconstrained++;
+
+                continue;
+            }
+
+            if ($schema instanceof StringSchema && self::isConstrainedString($schema) && $schema->enum === []) {
+                $hasConstrainedString = true;
+
+                continue;
+            }
+
+            $nestedEnum = $schema instanceof self ? $schema->stringEnum() : null;
+            if ($nestedEnum instanceof StringSchema && $nestedEnum->open === false && $nestedEnum->enum !== []) {
+                $nested[] = $nestedEnum;
+
+                continue;
+            }
+
+            $constValue = self::stringConstValue($schema);
+            if ($constValue !== null) {
+                $consts[] = ['value' => $constValue, 'title' => $schema->title];
+
+                continue;
+            }
+
+            if ($schema instanceof StringSchema && count($schema->enum) > 1) {
+                $multiValue[] = $schema;
+
+                continue;
+            }
+
+            if (self::isNonStringConst($schema)) {
+                $hasNumericConst = true;
+
+                continue;
+            }
+
+            $hasNonString = true;
+        }
+
+        $hasAnnotatedValues = $consts !== [] || $nested !== [];
+        if ($hasReference || $hasConstrainedString) {
+            return null;
+        }
+        if ($hasAnnotatedValues && ($hasNumericConst || $hasNonString || $multiValue !== [])) {
+            throw new InvalidSpecification("Invalid annotated string enumeration at {$location}");
+        }
+        if ($hasAnnotatedValues && $consts !== [] && $nested !== []) {
+            throw new InvalidSpecification("Invalid annotated string enumeration at {$location}");
+        }
+
+        if ($unconstrained > 0) {
+            if ($composition !== Composition::ANY_OF) {
+                return null;
+            }
+            if (count($multiValue) === 1 && $consts === [] && $nested === [] && ! $hasNumericConst && ! $hasNonString) {
+                return $multiValue[0];
+            }
+            if (count($nested) === 1 && $consts === [] && $multiValue === []) {
+                return self::openFrom($nested[0], $title, $description, $nullable, $default, $extensions);
+            }
+            if ($consts !== [] && $nested === [] && $multiValue === []) {
+                return self::synthesize($consts, true, $title, $description, $nullable, $default, $extensions);
+            }
+
+            return null;
+        }
+
+        if ($consts !== [] && $nested === [] && $multiValue === []) {
+            return self::synthesize($consts, false, $title, $description, $nullable, $default, $extensions);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<array{value: string, title: ?string}>  $branches
+     * @param  array<string, mixed>  $extensions
+     */
+    private static function synthesize(
+        array $branches,
+        bool $open,
+        ?string $title,
+        string $description,
+        bool $nullable,
+        mixed $default,
+        array $extensions,
+    ): StringSchema {
+        $values = [];
+        $keys = [];
+        $allTitled = true;
+        foreach ($branches as $branch) {
+            $values[] = $branch['value'];
+            if ($branch['title'] === null || $branch['title'] === '') {
+                $allTitled = false;
+
+                continue;
+            }
+            $keys[] = $branch['title'];
+        }
+
+        return new StringSchema(
+            title: $title,
+            description: $description,
+            nullable: $nullable,
+            default: $default,
+            enum: $values,
+            extensions: $extensions,
+            enumName: $title,
+            enumKeys: $allTitled ? $keys : [],
+            open: $open,
+        );
+    }
+
+    /** @param  array<string, mixed>  $extensions */
+    private static function openFrom(
+        StringSchema $inner,
+        ?string $title,
+        string $description,
+        bool $nullable,
+        mixed $default,
+        array $extensions,
+    ): StringSchema {
+        return new StringSchema(
+            title: $title ?? $inner->title,
+            description: $description !== '' ? $description : $inner->description,
+            nullable: $nullable || $inner->nullable,
+            default: $default ?? $inner->default,
+            enum: $inner->enum,
+            extensions: $extensions !== [] ? $extensions : $inner->extensions,
+            enumName: $title ?? $inner->enumName,
+            enumKeys: $inner->enumKeys,
+            open: true,
+        );
+    }
+
+    private static function isUnconstrainedString(Schema $schema): bool
+    {
+        return $schema instanceof StringSchema
+            && $schema->enum === []
+            && $schema->minLength === null
+            && $schema->maxLength === null
+            && $schema->pattern === null
+            && $schema->format === null;
+    }
+
+    private static function isConstrainedString(StringSchema $schema): bool
+    {
+        return $schema->minLength !== null
+            || $schema->maxLength !== null
+            || $schema->pattern !== null
+            || $schema->format !== null;
+    }
+
+    private static function stringConstValue(Schema $schema): ?string
+    {
+        if (count($schema->enum) !== 1 || ! is_string($schema->enum[0])) {
+            return null;
+        }
+        if ($schema instanceof StringSchema || $schema instanceof AnySchema) {
+            return $schema->enum[0];
+        }
+
+        return null;
+    }
+
+    private static function isNonStringConst(Schema $schema): bool
+    {
+        return count($schema->enum) === 1 && ! is_string($schema->enum[0]);
     }
 }
